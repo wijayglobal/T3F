@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block title %}Contributors · கலைச்சொல்{% endblock %}
+{% block content %}
+<h1 class="term">பங்களிப்பாளர்கள் <small class="gloss">Contributors</small></h1>
+<p class="lede">The admins and community members who add, review and verify the words. Credits also go into every dataset export.</p>
+<div class="card" style="overflow-x:auto"><table class="tbl">
+<tr><th>Name</th><th>Role</th><th>Approved words</th><th>Reviews</th></tr>
+{% for r in rows %}<tr><td><a href="{% url 'lexicon:profile' r.user.username %}">{{ r.user.profile.display_name|default:r.user.username }}</a> <small>@{{ r.user.username }}</small></td><td>{% if r.role == 'Admin' %}<span class="chip chip-ok">admin</span>{% else %}contributor{% endif %}</td><td>{{ r.words }}</td><td>{{ r.reviews }}</td></tr>
+{% empty %}<tr><td colspan="4"><em>No contributors yet.</em></td></tr>{% endfor %}
+</table></div>
+{% endblock %}

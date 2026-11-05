@@ -1,0 +1,41 @@
+{% load lex %}
+<li class="sug" data-id="{{ s.id }}">
+  <div class="sug-main">
+    <span class="ta">{{ s.tamil }}</span>
+    {% if s.roman %}<span class="roman">{{ s.roman }}</span>{% endif %}
+    <span class="chip chip-{{ s.region }}">{{ s.get_region_display }}</span>
+    {% if s.status == "pending" %}<span class="chip chip-pending">காத்திருப்பு · awaiting review</span>{% elif s.status == "draft" %}<span class="chip machine">வரைவு · unreviewed draft</span>{% elif s.status == "approved" and s.author_id %}<span class="chip chip-ok">✔ approved</span>{% endif %}
+    {% if s.pos %}<span class="pos">{{ s.pos }}</span>{% endif %}
+  </div>
+  {% if s.note %}<p class="note">{{ s.note }}</p>{% endif %}
+  {% with rel=relations|get:s.tamil %}
+  {% if rel %}
+  <p class="rels">
+    {% if rel.syn %}<span><b>ஒத்த சொற்கள் · Synonyms</b> {% for w in rel.syn|slice:":8" %}<a href="{% url 'lexicon:results' %}?q={{ w|urlencode }}">{{ w }}</a>{% endfor %}</span>{% endif %}
+    {% if rel.ant %}<span><b>எதிர்ச்சொற்கள் · Antonyms</b> {% for w in rel.ant|slice:":8" %}<a href="{% url 'lexicon:results' %}?q={{ w|urlencode }}">{{ w }}</a>{% endfor %}</span>{% endif %}
+  </p>
+  {% endif %}
+  {% endwith %}
+  <div class="sug-foot">
+    <div class="stars" data-url="{% url 'lexicon:rate' s.id %}" data-mine="{{ user_ratings|get:s.id|default:0 }}" {% if not user.is_authenticated %}data-anon="1"{% endif %}>
+      {% for i in "12345" %}<button type="button" class="star" data-v="{{ i }}" aria-label="{{ i }} star">★</button>{% endfor %}
+      <span class="avg"><b>{{ s.rating_avg|floatformat:1 }}</b> ({{ s.rating_count }})</span>
+    </div>
+    <span class="src" title="{{ s.get_source_kind_display }}">
+      <b>Source:</b>
+      {% if s.source_kind == "self" %}{{ s.source|default:"contributor" }} (own word)
+      {% else %}{% if s.source_url %}<a href="{{ s.source_url }}" target="_blank" rel="noopener nofollow">{{ s.source|default:s.source_ref|default:s.source_url }}</a>{% else %}{{ s.source }}{% endif %}{% if s.source_ref and s.source_url %} · {{ s.source_ref }}{% elif s.source_ref and s.source_kind == "book" %} · {{ s.source_ref }}{% endif %}{% endif %}
+    </span>
+    {% if user.is_authenticated %}
+    <details class="report">
+      <summary>report</summary>
+      <form method="post" action="{% url 'lexicon:report' s.id %}">{% csrf_token %}
+        <input type="hidden" name="next" value="{{ request.get_full_path }}">
+        <select name="reason">{% for v,l in report_form.fields.reason.choices %}<option value="{{ v }}">{{ l }}</option>{% endfor %}</select>
+        <textarea name="comment" rows="2" placeholder="Details (optional)"></textarea>
+        <button class="btn btn-ink">Send</button>
+      </form>
+    </details>
+    {% endif %}
+  </div>
+</li>

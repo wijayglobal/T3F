@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tamil Dictionary</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="top">
+  <div class="wrap bar">
+    <a class="logo" href="#">தமிழ் <span>Dictionary</span></a>
+    <nav>
+      <a href="#search">Dictionary</a>
+      <a href="#tips">Tips</a>
+      <a href="#about">About</a>
+      <a href="#" id="favLink">★ Favourites</a>
+    </nav>
+  </div>
+</header>
+
+<section class="hero">
+  <div class="wrap">
+    <h1>Free Online English–Tamil Dictionary</h1>
+    <p>Look up words in either direction, by typing or by voice.</p>
+  </div>
+</section>
+
+<main class="wrap">
+  <section id="search" class="card">
+    <form id="form" autocomplete="off">
+      <div class="modes" role="radiogroup" aria-label="Direction">
+        <label><input type="radio" name="mode" value="en-ta" checked> English → Tamil</label>
+        <label><input type="radio" name="mode" value="ta-en"> Tamil → English</label>
+      </div>
+      <div class="row">
+        <input id="q" type="text" placeholder="Type a word…" aria-label="Search word" required>
+        <button type="button" id="mic" title="Voice search">🎤</button>
+        <button type="button" id="lang" title="Voice language">EN</button>
+        <button type="submit" class="primary">Search</button>
+      </div>
+    </form>
+    <div id="recentBox" hidden><strong>Recent:</strong> <span id="recent"></span></div>
+    <div id="results"></div>
+  </section>
+
+  <section id="tips" class="grid">
+    <div class="card"><h3>⌨️ Shortcuts</h3><p>Press <kbd>/</kbd> to focus search and <kbd>Enter</kbd> to look up.</p></div>
+    <div class="card"><h3>🎤 Voice search</h3><p>Tap the mic; switch EN/TA for the spoken language.</p></div>
+    <div class="card"><h3>📋 Copy</h3><p>Click a meaning to copy it.</p></div>
+    <div class="card"><h3>★ Favourites</h3><p>Star words to keep them; saved in your browser.</p></div>
+  </section>
+
+  <section id="about" class="card">
+    <h2>About</h2>
+    <p>A small, fast dictionary demo. data comes from <code>words.json</code>, built by <code>scripts/build_dataset.py</code>.</p>
+  </section>
+</main>
+
+<footer><div class="wrap">Word data from <a href="https://en.wiktionary.org">Wiktionary</a> (via <a href="https://kaikki.org">kaikki.org</a>), licensed <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a>. Not affiliated with any other dictionary site.</div></footer>
+<script src="app.js"></script>
+</body>
+</html>

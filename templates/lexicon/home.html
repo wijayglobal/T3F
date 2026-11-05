@@ -1,0 +1,14 @@
+{% extends "base.html" %}{% load lex %}
+{% block content %}
+<section class="hero">
+  <p class="kicker">தமிழ் கலைச்சொல் களஞ்சியம்</p>
+  <h1>சொல்லைத் தேடுங்க.<br><em>வட்டாரம் சொல்லுங்க.</em></h1>
+  <p class="lede">Find the Tamil for an English word, hear how each region says it, and rate or suggest better ones.</p>
+  <form class="big-search" action="{% url 'lexicon:results' %}" role="search">
+    <input id="q" name="q" placeholder="server, வழங்கி, happy…" autofocus autocomplete="off" list="sugs">
+    <datalist id="sugs"></datalist>
+    <button class="btn btn-gold">தேடுக</button>
+  </form>
+  <p class="stats"><b>{{ term_count }}</b> words · <b>{{ suggestion_count }}</b> Tamil renderings</p>
+</section>
+{% endblock %}

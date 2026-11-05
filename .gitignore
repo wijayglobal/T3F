@@ -1,0 +1,11 @@
+.venv/
+__pycache__/
+*.pyc
+staticfiles/
+export/
+.env
+db.sqlite3
+data_raw/nllb-ct2/
+data_raw/nltk/
+data_raw/wikipedia_ta.cont
+data_raw/mydictionary/

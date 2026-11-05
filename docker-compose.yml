@@ -1,0 +1,29 @@
+# docker compose up -d --build
+# First run:  docker compose exec web python manage.py createsuperuser
+#             docker compose exec web python manage.py import_wiktionary
+#             docker compose exec web python manage.py import_english
+#             docker compose exec web python manage.py build_embeddings
+services:
+  db:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: kalaichol
+      POSTGRES_USER: kalaichol
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+    volumes: [pgdata:/var/lib/postgresql/data]
+  web:
+    build: .
+    restart: unless-stopped
+    depends_on: [db]
+    env_file: .env
+    environment:
+      POSTGRES_HOST: db
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports: ["8000:8000"]
+    volumes:
+      - models:/models                   # embedding + translation models survive rebuilds
+      - ./data_raw:/app/data_raw         # source data, NLLB model (data_raw/nllb-ct2), NLTK data
+volumes:
+  pgdata:
+  models:

@@ -1,0 +1,25 @@
+{% extends "base.html" %}{% load lex %}
+{% block title %}{{ q }} · கலைச்சொல்{% endblock %}
+{% block content %}
+<h2 class="count">முடிவுகள் எண்ணிக்கை: {{ count }} <small>results for “{{ q }}”</small></h2>
+{% for term in direct %}
+<article class="card">
+  <h3><a href="{% url 'lexicon:term' term.id %}">{{ term.text }}</a></h3>{% if term.gloss %}<p class="gloss">{{ term.gloss }}</p>{% endif %}
+  <ul class="sugs">{% for s in term.sugs %}{% include "lexicon/_suggestion.html" %}{% empty %}<li class="sug"><em>No Tamil yet. Be the first to suggest one below.</em></li>{% endfor %}</ul>
+</article>
+{% empty %}
+<div class="card empty">
+  <p>No exact match for “{{ q }}”.</p>
+  {% if user.is_authenticated %}<a class="btn btn-red" href="{% url 'lexicon:new_term' %}?q={{ q|urlencode }}">Add “{{ q }}”</a>{% else %}<p>Sign in to add it.</p>{% endif %}
+</div>
+{% endfor %}
+{% if related %}
+<h2 class="count">தொடர்புடைய சொற்கள் <small>related by meaning</small></h2>
+{% for term in related %}
+<article class="card related">
+  <h3><a href="{% url 'lexicon:term' term.id %}">{{ term.text }}</a></h3>{% if term.gloss %}<p class="gloss">{{ term.gloss }}</p>{% endif %}
+  <ul class="sugs">{% for s in term.sugs|slice:":3" %}{% include "lexicon/_suggestion.html" %}{% endfor %}</ul>
+</article>
+{% endfor %}
+{% endif %}
+{% endblock %}

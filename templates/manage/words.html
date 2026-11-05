@@ -1,0 +1,7 @@
+{% extends "manage/base.html" %}
+{% block manage %}
+<section class="card"><h2>ஒரு சொல் சேர்க்க <small>Add one word (approved immediately, credited to you)</small></h2>
+<form method="post" class="stack">{% csrf_token %}<input type="hidden" name="form" value="add">{{ add.as_p }}<button class="btn btn-red">Add</button></form></section>
+<section class="card"><h2>பல சொற்கள் <small>Bulk add</small></h2>
+<form method="post" class="stack">{% csrf_token %}<input type="hidden" name="form" value="bulk">{{ bulk.as_p }}<button class="btn btn-red">Import</button></form></section>
+{% endblock %}

@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}Admin · கலைச்சொல்{% endblock %}
+{% block content %}
+<nav class="tabs">
+  <a class="{% if request.resolver_match.url_name == 'manage' %}on{% endif %}" href="{% url 'lexicon:manage' %}">Overview</a>
+  <a class="{% if request.resolver_match.url_name == 'manage_users' %}on{% endif %}" href="{% url 'lexicon:manage_users' %}">Users</a>
+  <a class="{% if request.resolver_match.url_name == 'manage_words' %}on{% endif %}" href="{% url 'lexicon:manage_words' %}">Add words</a>
+  <a class="{% if request.resolver_match.url_name == 'manage_reports' %}on{% endif %}" href="{% url 'lexicon:manage_reports' %}">Reports</a>
+  <a href="{% url 'lexicon:review' %}?kind=pending">Review queue</a>
+  <a href="/admin/">Django admin</a>
+</nav>
+{% block manage %}{% endblock %}
+{% endblock %}

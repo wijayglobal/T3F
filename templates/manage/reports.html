@@ -1,0 +1,15 @@
+{% extends "manage/base.html" %}
+{% block manage %}
+{% for r in reports %}
+<article class="card">
+  <div class="pair"><span class="en">{{ r.suggestion.term.text }}</span><span class="arrow">→</span><span class="ta">{{ r.suggestion.tamil }}</span></div>
+  <p class="gloss">{{ r.get_reason_display }} · reported by {{ r.user.username }} · {{ r.created|date:"d M H:i" }} · now: {{ r.suggestion.get_status_display }}{% if r.suggestion.hidden %} · hidden{% endif %}</p>
+  {% if r.comment %}<p class="note">{{ r.comment }}</p>{% endif %}
+  <form method="post" action="{% url 'lexicon:manage_report_action' r.id %}" class="vote">{% csrf_token %}
+    <button name="action" value="dismiss" class="vbtn ok">Dismiss</button>
+    <button name="action" value="hide" class="vbtn skip">Hide word</button>
+    <button name="action" value="reject" class="vbtn no">Reject word</button>
+  </form>
+</article>
+{% empty %}<div class="card empty"><p>No open reports.</p></div>{% endfor %}
+{% endblock %}

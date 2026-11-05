@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="card">
+  <h2>புதிய சொல் <small>Add an English word</small></h2>
+  <form method="post" class="stack">{% csrf_token %}
+    <p><label>English word<input name="word" value="{{ initial.word }}" required></label></p>
+    {{ form.as_p }}<button class="btn btn-red">சேர்</button>
+  </form>
+</section>
+{% endblock %}

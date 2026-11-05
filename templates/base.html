@@ -1,0 +1,40 @@
+{% load static %}<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block title %}கலைச்சொல் · Kalaichol{% endblock %}</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Anek+Latin:wdth,wght@75..100,400..800&family=Anek+Tamil:wdth,wght@75..100,400..800&family=Tiro+Tamil&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{% static 'css/site.css' %}">
+</head>
+<body>
+<header class="bar">
+  <a class="brand" href="{% url 'lexicon:home' %}"><span class="aytham">ஃ</span><span>கலைச்சொல்</span></a>
+  {% if request.resolver_match.url_name != 'home' %}
+  <form class="mini-search" action="{% url 'lexicon:results' %}" role="search">
+    <input name="q" value="{{ q|default:'' }}" placeholder="Search a word · சொல்லைத் தேடுக" lang="ta" autocomplete="off">
+    <button class="btn btn-gold">தேடுக</button>
+  </form>
+  {% endif %}
+  <nav>
+    <a href="{% url 'lexicon:new_term' %}">+ Add word</a>
+    <a href="{% url 'lexicon:review' %}">✓ Review</a>
+    {% if user.is_staff %}<a href="{% url 'lexicon:manage' %}">⚙ Admin</a>{% endif %}
+    {% if user.is_authenticated %}
+      <a class="who" href="{% url 'lexicon:profile' user.username %}">{{ user.username }}</a>
+      <form method="post" action="{% url 'account_logout' %}">{% csrf_token %}<button class="link">வெளியேறு</button></form>
+    {% else %}
+      <a href="{% url 'account_login' %}">உள்நுழைக</a>
+      <a class="btn btn-red" href="{% url 'account_signup' %}">பதிவு செய்க · Sign up</a>
+    {% endif %}
+  </nav>
+</header>
+{% if messages %}<div class="messages">{% for m in messages %}<p class="msg {{ m.tags }}">{{ m }}</p>{% endfor %}</div>{% endif %}
+<main class="{% block mainclass %}{% endblock %}">{% block content %}{% endblock %}</main>
+<footer class="foot">
+  <p>Words seeded from Wiktionary (CC BY-SA). Suggestions and ratings come from the community. <a href="{% url 'lexicon:contributors' %}">Contributors</a></p>
+</footer>
+<script src="{% static 'js/site.js' %}" defer></script>
+</body>
+</html>

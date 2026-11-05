@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}Review · கலைச்சொல்{% endblock %}
+{% block content %}
+<h1 class="term">சரிபார்க்க <small class="gloss">Review translations</small></h1>
+<p class="lede">Is this Tamil a correct translation of the English word? Tick for correct, cross for incorrect. A suggestion goes live when {{ threshold }} more verified users accept than reject it.</p>
+<nav class="tabs">
+  <a class="{% if kind == 'pending' %}on{% endif %}" href="?kind=pending">New suggestions ({{ counts.pending }})</a>
+  <a class="{% if kind == 'machine' %}on{% endif %}" href="?kind=machine">Machine drafts</a>
+  <a class="{% if kind == 'ocr' %}on{% endif %}" href="?kind=ocr">Book (OCR) entries</a>
+  <span class="tabs-note">You have reviewed {{ my_reviews }}</span>
+</nav>
+{% for s in items %}
+<article class="card review" data-url="{% url 'lexicon:review_vote' s.id %}">
+  <p class="gloss">{{ s.get_status_display }} · {{ s.get_source_kind_display }}{% if s.author %} · by <a href="{% url 'lexicon:profile' s.author.username %}">{{ s.author.username }}</a>{% endif %}</p>
+  <div class="pair"><span class="en">{{ s.term.text }}</span><span class="arrow">→</span><span class="ta">{{ s.tamil }}</span></div>
+  {% if s.roman %}<p class="roman">{{ s.roman }}</p>{% endif %}
+  {% if s.term.gloss %}<p class="gloss">{{ s.term.gloss }}</p>{% endif %}
+  {% if s.note %}<p class="note">{{ s.note }}</p>{% endif %}
+  <p class="src"><b>Source:</b> {% if s.source_url %}<a href="{{ s.source_url }}" target="_blank" rel="noopener nofollow">{{ s.source|default:s.source_url }}</a>{% else %}{{ s.source }}{% if s.source_ref %} · {{ s.source_ref }}{% endif %}{% endif %}</p>
+  <div class="vote">
+    <button class="vbtn ok" data-v="accept" aria-label="Correct">✓ சரி · Correct</button>
+    <button class="vbtn no" data-v="reject" aria-label="Incorrect">✗ தவறு · Incorrect</button>
+    <button class="vbtn skip" data-v="skip">Skip</button>
+  </div>
+</article>
+{% empty %}
+<div class="card empty"><p>Nothing to review here right now. 🎉</p></div>
+{% endfor %}
+{% endblock %}

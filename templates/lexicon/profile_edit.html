@@ -1,0 +1,5 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="card"><h2>சுயவிவரம் <small>Edit profile</small></h2>
+<form method="post" class="stack">{% csrf_token %}{{ form.as_p }}<button class="btn btn-red">Save</button></form></section>
+{% endblock %}

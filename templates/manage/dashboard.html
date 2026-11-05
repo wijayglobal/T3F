@@ -1,0 +1,16 @@
+{% extends "manage/base.html" %}
+{% block manage %}
+<div class="stats-grid">
+  <div><b>{{ pending_users }}</b><span>users to approve</span></div>
+  <div><b>{{ pending_words }}</b><span>words awaiting review</span></div>
+  <div><b>{{ open_reports }}</b><span>open reports</span></div>
+  <div><b>{{ new_users }}</b><span>new users (7 days)</span></div>
+  <div><b>{{ users }}</b><span>users</span></div>
+  <div><b>{{ terms }}</b><span>English words</span></div>
+  <div><b>{{ approved }}</b><span>approved Tamil words</span></div>
+  <div><b>{{ drafts }}</b><span>unreviewed drafts</span></div>
+</div>
+<p><a class="btn btn-gold" href="{% url 'lexicon:manage_users' %}">Approve users</a>
+<a class="btn btn-gold" href="{% url 'lexicon:review' %}?kind=pending">Review new words</a>
+<a class="btn btn-red" href="{% url 'lexicon:manage_words' %}">Add words</a></p>
+{% endblock %}

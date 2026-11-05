@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}{{ prof }} · கலைச்சொல்{% endblock %}
+{% block content %}
+<section class="card prof">
+  <div class="prof-head">
+    <div class="avatar">{{ p_user.username|first|upper }}</div>
+    <div>
+      <h1 class="term">{{ prof }} {% if verified %}<span class="chip chip-ok" title="Confirmed email">✔ verified</span>{% endif %}</h1>
+      <p class="gloss">@{{ p_user.username }} · member since {{ p_user.date_joined|date:"M Y" }}</p>
+      {% if prof.bio %}<p>{{ prof.bio }}</p>{% endif %}
+      {% if prof.website %}<p><a href="{{ prof.website }}" rel="nofollow noopener" target="_blank">{{ prof.website }}</a></p>{% endif %}
+      {% if own %}<a class="btn btn-gold" href="{% url 'lexicon:edit_profile' %}">Edit profile</a>{% endif %}
+    </div>
+  </div>
+  <div class="stats-grid">
+    <div><b>{{ stats.points }}</b><span>points</span></div>
+    <div><b>{{ stats.approved }}</b><span>approved words</span></div>
+    <div><b>{{ stats.reviews }}</b><span>reviews</span></div>
+    <div><b>{% if stats.agreement is not None %}{{ stats.agreement }}%{% else %}–{% endif %}</b><span>review agreement</span></div>
+    <div><b>{% if stats.avg_rating %}{{ stats.avg_rating }}★{% else %}–{% endif %}</b><span>avg rating</span></div>
+    <div><b>{{ stats.ratings_given }}</b><span>ratings given</span></div>
+  </div>
+  {% if badges %}<p class="badges">{% for icon,name,desc in badges %}<span class="chip" title="{{ desc }}">{{ icon }} {{ name }}</span> {% endfor %}</p>{% endif %}
+  {% if own %}<p class="gloss">Awaiting review: {{ stats.pending }} · Rejected: {{ stats.rejected }}</p>{% endif %}
+</section>
+
+<section class="card">
+  <h2>பங்களிப்புகள் <small>Approved contributions</small></h2>
+  <ul class="sugs">{% for s in words %}
+    <li class="sug"><div class="sug-main"><a href="{% url 'lexicon:term' s.term_id %}" class="en">{{ s.term.text }}</a> → <span class="ta">{{ s.tamil }}</span><span class="chip chip-{{ s.region }}">{{ s.get_region_display }}</span></div></li>
+  {% empty %}<li class="sug"><em>No approved words yet.</em></li>{% endfor %}</ul>
+</section>
+
+{% if prof.public %}
+<section class="card">
+  <h2>உங்கள் தளத்தில் சேர்க்க <small>Showcase on your website</small></h2>
+  <p>Badge preview: <img src="{% url 'lexicon:badge' p_user.username %}" alt="badge"></p>
+  {% if own %}
+  <details open><summary>Embeddable card (iframe)</summary><textarea readonly rows="3" onclick="this.select()">{{ snippets.iframe }}</textarea></details>
+  <details><summary>Badge (HTML)</summary><textarea readonly rows="3" onclick="this.select()">{{ snippets.badge }}</textarea></details>
+  <details><summary>Badge (Markdown, e.g. GitHub README)</summary><textarea readonly rows="2" onclick="this.select()">{{ snippets.markdown }}</textarea></details>
+  {% endif %}
+</section>
+{% endif %}
+{% endblock %}

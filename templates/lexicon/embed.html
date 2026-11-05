@@ -1,0 +1,11 @@
+{% load static %}<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<link href="https://fonts.googleapis.com/css2?family=Anek+Latin:wght@400..800&family=Anek+Tamil:wght@400..800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{% static 'css/site.css' %}">
+<style>body{background:transparent;margin:0;padding:6px}.embed{margin:0}.embed a{text-decoration:none}</style></head>
+<body><a class="card embed" target="_top" href="{% url 'lexicon:profile' p_user.username %}" style="display:block;color:inherit">
+  <div class="prof-head"><div class="avatar sm">{{ p_user.username|first|upper }}</div>
+  <div><b class="ta" style="font-size:1.2rem">{{ prof }}</b><br><span class="gloss">கலைச்சொல் contributor</span></div></div>
+  <div class="stats-grid sm"><div><b>{{ stats.approved }}</b><span>words</span></div><div><b>{{ stats.reviews }}</b><span>reviews</span></div><div><b>{{ stats.points }}</b><span>points</span></div></div>
+  {% if badges %}<p class="badges">{% for icon,name,desc in badges %}<span class="chip">{{ icon }} {{ name }}</span> {% endfor %}</p>{% endif %}
+</a></body></html>

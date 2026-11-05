@@ -1,0 +1,31 @@
+{% extends "manage/base.html" %}
+{% block manage %}
+<nav class="tabs">
+  <a class="{% if f == 'pending' %}on{% endif %}" href="?f=pending">Awaiting approval</a>
+  <a class="{% if f == 'all' %}on{% endif %}" href="?f=all">All users</a>
+  <a class="{% if f == 'staff' %}on{% endif %}" href="?f=staff">Admins</a>
+  <form class="mini-search" style="margin-left:auto"><input type="hidden" name="f" value="{{ f }}"><input name="q" value="{{ q }}" placeholder="username or email"><button class="btn btn-gold">Find</button></form>
+</nav>
+<div class="card" style="overflow-x:auto"><table class="tbl">
+<tr><th>User</th><th>Email</th><th>Verified</th><th>Approval</th><th>Words</th><th>Reviews</th><th>Joined</th><th></th></tr>
+{% for u,verified in rows %}
+<tr>
+  <td><a href="{% url 'lexicon:profile' u.username %}">{{ u.username }}</a>{% if u.is_staff %} <span class="chip">admin</span>{% endif %}</td>
+  <td>{{ u.email }}</td>
+  <td>{% if verified %}✔{% else %}–{% endif %}</td>
+  <td>{{ u.profile.get_approval_display|default:"Awaiting approval" }}{% if u.profile.approved_by %}<br><small>{{ u.profile.approved_by }}</small>{% endif %}</td>
+  <td>{{ u.words }}</td><td>{{ u.reviews_n }}</td><td>{{ u.date_joined|date:"d M Y" }}</td>
+  <td>
+    <form method="post" action="{% url 'lexicon:manage_user_action' u.id %}" class="inline">{% csrf_token %}
+      <button name="action" value="approve" class="vbtn ok">Approve</button>
+      <button name="action" value="reject" class="vbtn no">Reject</button>
+      {% if request.user.is_superuser and u != request.user %}
+        {% if u.is_staff %}<button name="action" value="remove_staff" class="vbtn skip">Remove admin</button>
+        {% else %}<button name="action" value="make_staff" class="vbtn skip">Make admin</button>{% endif %}
+      {% endif %}
+    </form>
+  </td>
+</tr>
+{% empty %}<tr><td colspan="8"><em>Nobody here.</em></td></tr>{% endfor %}
+</table></div>
+{% endblock %}

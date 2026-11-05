@@ -1,0 +1,16 @@
+{% extends "base.html" %}{% load lex %}
+{% block title %}{{ term.text }} · கலைச்சொல்{% endblock %}
+{% block content %}
+<article class="card">
+  <h1 class="term">{{ term.text }}</h1>{% if term.gloss %}<p class="gloss">{{ term.gloss }}</p>{% endif %}
+  <ul class="sugs">{% for s in term.sugs %}{% include "lexicon/_suggestion.html" %}{% empty %}<li class="sug"><em>No Tamil yet. Be the first to suggest one below.</em></li>{% endfor %}</ul>
+</article>
+<section class="card">
+  <h2>உங்க பரிந்துரை <small>Suggest a Tamil word</small></h2>
+  {% if user.is_authenticated %}
+  <form method="post" action="{% url 'lexicon:add_suggestion' term.id %}" class="stack">{% csrf_token %}
+    {{ form.as_p }}<button class="btn btn-red">சேர்</button>
+  </form>
+  {% else %}<p><a href="{% url 'account_login' %}">Sign in</a> or <a href="{% url 'account_signup' %}">sign up</a> to suggest and rate.</p>{% endif %}
+</section>
+{% endblock %}

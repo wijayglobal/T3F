@@ -1,0 +1,14 @@
+django>=5.1,<5.2
+django-allauth>=65
+gunicorn
+whitenoise
+psycopg[binary]
+numpy
+fastembed
+ctranslate2
+sentencepiece
+nltk
+wordfreq
+pyarrow
+huggingface-hub
+pydantic>=2.7,<3
