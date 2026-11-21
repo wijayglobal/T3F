@@ -1,0 +1,42 @@
+name: Run a server task
+description: >
+  SSH to the server as the restricted "deploy" user and run one task from deploy/ci.sh
+  (deploy, backup, status, restart, build-embeddings). The key can do nothing else.
+
+inputs:
+  task:
+    description: Task and optional argument, e.g. "deploy abc1234" or "status".
+    required: true
+  ssh-key:
+    description: Private key of the deploy user (secret DEPLOY_SSH_KEY).
+    required: true
+  host:
+    description: Server host name (secret DEPLOY_SSH_HOST).
+    required: true
+  user:
+    description: SSH user (secret DEPLOY_SSH_USER).
+    required: true
+  known-hosts:
+    description: Output of ssh-keyscan for the host (secret DEPLOY_KNOWN_HOSTS).
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: ${{ inputs.task }}
+      shell: bash
+      env:
+        TASK: ${{ inputs.task }}
+        SSH_KEY: ${{ inputs.ssh-key }}
+        SSH_HOST: ${{ inputs.host }}
+        SSH_USER: ${{ inputs.user }}
+        KNOWN_HOSTS: ${{ inputs.known-hosts }}
+      run: |
+        set -euo pipefail
+        install -m 700 -d ~/.ssh
+        printf '%s\n' "$SSH_KEY" > ~/.ssh/deploy_key
+        chmod 600 ~/.ssh/deploy_key
+        printf '%s\n' "$KNOWN_HOSTS" > ~/.ssh/known_hosts
+        trap 'rm -f ~/.ssh/deploy_key' EXIT
+        ssh -i ~/.ssh/deploy_key -o BatchMode=yes -o StrictHostKeyChecking=yes \
+            -o ServerAliveInterval=30 "$SSH_USER@$SSH_HOST" "$TASK" </dev/null

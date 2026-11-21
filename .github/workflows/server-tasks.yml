@@ -1,0 +1,40 @@
+name: Server tasks
+
+# Run by hand: Actions → Server tasks → Run workflow.
+on:
+  workflow_dispatch:
+    inputs:
+      task:
+        description: What to run on the server
+        type: choice
+        default: status
+        options:
+          - status            # deployed commit + container status
+          - deploy            # pull main and redeploy
+          - restart           # restart the containers without rebuilding
+          - backup            # pg_dump the database now (deploy/backup.sh)
+          - build-embeddings  # rebuild the meaning-search index after new terms
+
+permissions:
+  contents: read
+
+jobs:
+  run:
+    name: ${{ inputs.task }}
+    runs-on: ubuntu-latest
+    environment: production
+    concurrency:
+      group: kalaichol-production
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: .github/actions
+
+      - uses: ./.github/actions/server-task
+        with:
+          task: ${{ inputs.task }}
+          ssh-key: ${{ secrets.DEPLOY_SSH_KEY }}
+          host: ${{ secrets.DEPLOY_SSH_HOST }}
+          user: ${{ secrets.DEPLOY_SSH_USER }}
+          known-hosts: ${{ secrets.DEPLOY_KNOWN_HOSTS }}

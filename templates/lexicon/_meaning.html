@@ -1,0 +1,10 @@
+{% load lex %}<li class="meaning-row">
+  <a class="ta-sm" href="{% url 'lexicon:results' %}?q={{ m.word|urlencode }}">{{ m.word }}</a>
+  {% if m.roman %}<span class="roman">{{ m.roman }}</span>{% endif %}
+  {% if m.pos %}<span class="pos">{{ m.pos }}</span>{% endif %}
+  {% if m.register %}<span class="chip chip-register">{{ m.get_register_display }}</span>{% endif %}
+  {% if m.domain %}<span class="chip chip-domain">{{ m.domain|domain_label }}</span>{% endif %}
+  <p class="note">{{ m.gloss }}</p>
+  {% if m.example %}<p class="example">{{ m.example }}</p>{% endif %}
+  <p class="src">{% if m.source_url %}<a href="{{ m.source_url }}" target="_blank" rel="noopener nofollow">{{ m.source }}</a>{% else %}{{ m.source }}{% endif %}</p>
+</li>

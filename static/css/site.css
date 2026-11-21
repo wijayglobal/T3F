@@ -97,3 +97,20 @@ main.auth label{font-weight:600}
 .badges{margin:8px 0 0}textarea[readonly]{font:13px ui-monospace,monospace}
 .tbl{width:100%;border-collapse:collapse;font-size:.92rem}.tbl th,.tbl td{padding:8px 10px;border-bottom:1px dashed var(--line);text-align:left;vertical-align:top}
 .tbl th{font-weight:700;color:var(--muted)}form.inline{display:flex;gap:6px;flex-wrap:wrap}.inline .vbtn{padding:5px 12px;font-size:.85rem}
+.rel-scope{color:var(--faint);font-size:.8rem;font-style:italic}
+.other-meanings .meaning i{color:var(--faint)}
+.sources{margin-top:8px;font-size:.85rem;color:var(--muted)}
+.sources summary{cursor:pointer;color:var(--faint);font-weight:600}
+.sources ul{list-style:none;margin:6px 0 0;padding:0 0 0 12px;border-left:3px solid var(--manjal-300);display:flex;flex-direction:column;gap:4px}
+.sources li{display:flex;flex-wrap:wrap;gap:4px 8px;align-items:baseline}
+.sources .sense{color:var(--ink)}
+.chip-domain{background:var(--surface);border-color:var(--mayil);color:var(--mayil)}
+.chip-register{background:var(--surface);border-style:dashed;color:var(--muted)}
+.meanings{list-style:none;margin:0;padding:0}
+.meaning-row{padding:10px 0;border-top:1px dashed var(--line)}
+.meaning-row:first-child{border-top:0}
+.ta-sm{font:800 1.25rem var(--display);color:var(--ink);text-decoration:none;margin-right:6px}
+.example{margin:4px 0 0;font-size:.9rem;color:var(--faint);font-style:italic}
+@media (max-width:600px){.sources ul{padding-left:8px}}
+.note-long summary{cursor:pointer;list-style:none}
+.note-long[open] summary{display:none}

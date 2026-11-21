@@ -9,3 +9,5 @@ data_raw/nllb-ct2/
 data_raw/nltk/
 data_raw/wikipedia_ta.cont
 data_raw/mydictionary/
+data/
+backups/

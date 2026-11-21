@@ -10,9 +10,9 @@ import threading
 import time
 
 import numpy as np
-from django.db.models import Q
+from django.db.models import Count, Q
 
-from .models import Relation, Status, Suggestion, Term
+from .models import Relation, Status, Suggestion, TamilForm, Term
 
 PUBLIC = [Status.APPROVED, Status.DRAFT]
 
@@ -97,6 +97,13 @@ def search(query, limit=30):
             hidden=False, status__in=PUBLIC, tamil__icontains=q
         ).values_list("term_id", "tamil")[:400]:
             bump(tid, 1.0 if tamil == q else 0.8 if tamil.startswith(q) else 0.6)
+        # an inflected form finds its headword: அடித்தான் -> அடி
+        lemmas = lemmas_of(q)
+        if lemmas:
+            for tid in Suggestion.objects.filter(
+                hidden=False, status__in=PUBLIC, tamil__in=lemmas
+            ).values_list("term_id", flat=True)[:100]:
+                bump(tid, 0.95)
     else:
         ql = q.lower()
         for t in Term.objects.filter(text__icontains=ql).values_list("id", "text")[:400]:
@@ -115,6 +122,16 @@ def search(query, limit=30):
         )[:50]:
             bump(tid, 0.9)
 
+    # Among equally good text matches, terms that have Tamil (and more sources vouching for it) come
+    # first: "yellow fever" (8 books) before "yellow avens" (no Tamil yet). Stays below the next tier.
+    if scores:
+        backing = (
+            Suggestion.objects.filter(term_id__in=list(scores), hidden=False, status__in=PUBLIC)
+            .values("term_id").annotate(n=Count("attestations")).values_list("term_id", "n")
+        )
+        for tid, n in backing:
+            scores[tid] += 0.06 + 0.01 * min(n, 6)
+
     # The model aligns Tamil poorly with English headwords, so Tamil queries stay literal.
     sem = {} if TAMIL.search(q) else dict(semantic_terms(q))
     lexical_ids = set(scores)
@@ -131,6 +148,11 @@ def search(query, limit=30):
     direct = [t for t in ordered if t.id in lexical_ids]
     related = [t for t in ordered if t.id not in lexical_ids]
     return direct, related, relations_for(direct + related)
+
+
+def lemmas_of(word):
+    """Headwords an inflected Tamil form belongs to (Wiktionary inflection tables)."""
+    return list(TamilForm.objects.filter(form=word).values_list("lemma", flat=True).distinct()[:5])
 
 
 def relations_for(terms):

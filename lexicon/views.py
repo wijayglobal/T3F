@@ -17,8 +17,9 @@ from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
 
 from .forms import ProfileForm, ReportForm, SuggestionForm
-from .models import Profile, Rating, Report, Review, SourceKind, Status, Suggestion, Term
-from .search import relations_for, search
+from .models import Profile, Rating, Report, Review, SourceKind, Status, Suggestion, TamilSense, Term
+from .details import enrich, tamil_words_meaning
+from .search import TAMIL, lemmas_of, relations_for, search
 
 User = get_user_model()
 
@@ -94,9 +95,19 @@ def home(request):
 def results(request):
     q = request.GET.get("q", "").strip()
     direct, related, relations = search(q) if q else ([], [], {})
-    prep(direct + related, request.user)
+    enrich(prep(direct + related, request.user))
+    shown = {s.tamil for t in direct for s in t.sugs}
+    if q and TAMIL.search(q):
+        # the Tamil word's own meanings, from its source (and its headword's, for an inflected form)
+        heads = [q] + lemmas_of(q)
+        word_meanings = list(TamilSense.objects.filter(word__in=heads))
+        meaning_mentions = []
+    else:
+        word_meanings = []
+        meaning_mentions = tamil_words_meaning(q, exclude=shown) if q else []
     return render(request, "lexicon/results.html", {
         "q": q, "direct": direct, "related": related, "relations": relations,
+        "word_meanings": word_meanings, "meaning_mentions": meaning_mentions,
         "user_ratings": _ratings_for(request.user), "count": len(direct),
         "report_form": ReportForm(),
     })
@@ -104,7 +115,7 @@ def results(request):
 
 def term_detail(request, pk):
     term = get_object_or_404(Term.objects.prefetch_related("suggestions__author"), pk=pk)
-    prep([term], request.user)
+    enrich(prep([term], request.user))
     return render(request, "lexicon/term.html", {
         "term": term, "relations": relations_for([term]),
         "user_ratings": _ratings_for(request.user),

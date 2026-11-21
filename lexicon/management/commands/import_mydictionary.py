@@ -1,8 +1,12 @@
+import hashlib
+
 from django.core.management.base import BaseCommand
 from django.db import transaction
 
-from lexicon.models import SourceKind, Status, Suggestion, Term
-from lexicon.schemas import validate_file
+from lexicon.domains import for_source
+from lexicon.importing import attest, suggestion_ids
+from lexicon.models import Attestation, SourceKind, Status, Suggestion, TamilSense, Term
+from lexicon.schemas import tamil_definitions, validate_file
 
 BATCH = 5000
 
@@ -41,15 +45,38 @@ class Command(BaseCommand):
                 [
                     Suggestion(
                         term_id=tid[r.term], tamil=r.tamil, pos=r.pos, note=r.note,
+                        sense=r.sense, domain=r.domain,
                         source=r.source, source_kind=SourceKind.BOOK, source_url=r.source_url,
                         source_ref="mydictionary.in", status=Status.DRAFT, license=r.license.value,
                     )
-                    for r in rows
+                    for r in {r.key(): r for r in reversed(rows)}.values()  # first book per pair
                 ],
                 # an existing pair (a user's word, another book) keeps its own source and status
                 ignore_conflicts=True,
                 batch_size=BATCH,
             )
+            sid = suggestion_ids({r.key() for r in rows}, tid)
+            attest([
+                Attestation(
+                    suggestion_id=sid[r.key()], source=r.source, source_kind=SourceKind.BOOK,
+                    source_url=r.source_url, source_ref="mydictionary.in", license=r.license.value,
+                    sense=r.sense, domain=r.domain, note=r.note,
+                )
+                for r in rows if r.key() in sid
+            ], batch_size=BATCH)
+            # Tamil headwords with Tamil meanings (Sangam / Siddha books): kept as senses of the word
+            senses = [
+                TamilSense(
+                    word=e.term, gloss="; ".join(x for x in (e.meaning, e.meaning_note) if x), gloss_lang="ta",
+                    domain=for_source(e.dictionary, e.dictionary_en), source=e.dictionary,
+                    source_url=str(e.dictionary_url), license=e.license.value,
+                    ref=hashlib.sha1(f"{e.term}|{e.meaning}".encode()).hexdigest()[:20],
+                )
+                for e in tamil_definitions(path)
+                if len(e.term) <= 200
+            ]
+            TamilSense.objects.bulk_create(senses, ignore_conflicts=True, batch_size=BATCH)
+        self.stdout.write(f"{len(senses)} Tamil-Tamil definitions kept as Tamil senses")
         self.stdout.write(
             f"terms +{Term.objects.count() - before_t}, suggestions +{Suggestion.objects.count() - before_s} "
             f"(pairs already present were left as they were). Run build_embeddings to embed the new terms."

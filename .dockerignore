@@ -1,0 +1,12 @@
+.git
+.github
+.venv
+.env
+db.sqlite3
+data/
+backups/
+data_raw/
+export/
+staticfiles/
+**/__pycache__
+*.pyc

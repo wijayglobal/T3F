@@ -16,6 +16,10 @@ from pathlib import Path
 from urllib.parse import unquote
 from typing import Annotated, Iterator, Literal
 
+try:
+    from .domains import for_source
+except ImportError:  # loaded as a plain module (scraper, notebooks)
+    from domains import for_source
 from pydantic import AfterValidator, BaseModel, ConfigDict, Field, HttpUrl, ValidationError, field_validator
 
 TAMIL = re.compile(r"[஀-௿]")
@@ -34,7 +38,7 @@ POS_ABBR = {
 GLOSS_THEN_TAMIL = re.compile(r"^([^஀-௿]*[A-Za-z][^஀-௿]*?)\s+([஀-௿][^A-Za-z]*)$")
 
 # DB column limits (lexicon.models): Term.text 120, Suggestion.tamil 200, pos 30, source 200, source_url 500
-TERM_MAX, TAMIL_MAX, POS_MAX, SOURCE_MAX, URL_MAX = 120, 200, 30, 200, 500
+TERM_MAX, TAMIL_MAX, POS_MAX, SOURCE_MAX, URL_MAX, SENSE_MAX = 120, 200, 30, 200, 500, 300
 
 
 def clean(s: str) -> str:
@@ -78,6 +82,8 @@ class SuggestionIn(BaseModel):
     tamil: str = Field(min_length=1, max_length=TAMIL_MAX)
     pos: str = Field("", max_length=POS_MAX)
     note: str = ""
+    sense: str = Field("", max_length=SENSE_MAX)  # the book's English gloss for this rendering, if any
+    domain: str = ""  # subject slug (lexicon/domains.json), from the book
     source: str = Field(max_length=SOURCE_MAX)
     source_url: str = Field(max_length=URL_MAX, pattern=r"^https?://mydictionary\.in/")  # readable, not %-encoded
     license: Licence
@@ -94,6 +100,10 @@ class SuggestionIn(BaseModel):
     def key(self) -> tuple:
         """Matches the DB uniqueness rule (term, tamil, region=common)."""
         return self.term, self.tamil
+
+    def attestation_key(self) -> tuple:
+        """One per book: the same pair from five books is one Suggestion with five attestations."""
+        return self.term, self.tamil, self.source
 
 
 class ScrapedEntry(BaseModel):
@@ -163,6 +173,7 @@ class ScrapedEntry(BaseModel):
         return SuggestionIn(
             term=term.lower(), tamil=tamil, pos=pos,
             note="; ".join(n for n in (gloss, self.term_note, self.meaning_note) if n),
+            sense=gloss[:SENSE_MAX], domain=for_source(self.dictionary, self.dictionary_en),
             source=self.dictionary, source_url=unquote(str(self.dictionary_url)), license=self.license,
         )
 
@@ -172,7 +183,7 @@ class Report(BaseModel):
     entries: int = 0  # passed ScrapedEntry
     by_direction: dict[str, int] = Field(default_factory=dict)
     truncated: int = 0
-    suggestions: int = 0  # unique SuggestionIn produced (en-ta only)
+    suggestions: int = 0  # unique (term, tamil, book) SuggestionIn produced (en-ta only)
     rejected: dict[str, int] = Field(default_factory=dict)  # reason -> count
     examples: dict[str, str] = Field(default_factory=dict)  # reason -> first offending input
 
@@ -180,6 +191,19 @@ class Report(BaseModel):
 def _reason(err: ValidationError) -> str:
     e = err.errors()[0]
     return f"{'.'.join(map(str, e['loc'])) or 'row'}: {e['msg']}"
+
+
+def tamil_definitions(path: Path) -> Iterator[ScrapedEntry]:
+    """The ta-ta entries (Tamil headword, Tamil meaning) that validate_file leaves out."""
+    for line in Path(path).read_text(encoding="utf-8").splitlines():
+        if not line.strip():
+            continue
+        try:
+            entry = ScrapedEntry.model_validate(json.loads(line))
+        except ValidationError:
+            continue
+        if entry.direction is Direction.TA_TA:
+            yield entry
 
 
 def validate_file(path: Path) -> tuple[list[SuggestionIn], Report]:
@@ -209,8 +233,8 @@ def validate_file(path: Path) -> tuple[list[SuggestionIn], Report]:
             except ValidationError as e:
                 reject(_reason(e), f"{entry.term} → {tamil}")
                 continue
-            if s.key() not in seen:
-                seen.add(s.key())
+            if s.attestation_key() not in seen:
+                seen.add(s.attestation_key())
                 out.append(s)
     rep.suggestions = len(out)
     return out, rep

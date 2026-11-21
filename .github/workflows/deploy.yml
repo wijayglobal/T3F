@@ -1,0 +1,77 @@
+name: Test and deploy
+
+# Every push to main: run the tests (on Postgres, like production), then deploy to the server.
+# Pull requests only run the tests.
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Tests
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: kalaichol
+          POSTGRES_USER: kalaichol
+          POSTGRES_PASSWORD: ci-only
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U kalaichol -d kalaichol"
+          --health-interval 5s --health-timeout 3s --health-retries 10
+    env:
+      DJANGO_DEBUG: "1"
+      DJANGO_SECRET_KEY: ci-only-not-a-secret
+      POSTGRES_HOST: localhost
+      POSTGRES_PASSWORD: ci-only
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+          cache-dependency-glob: uv.lock
+
+      - name: Install the locked dependencies
+        run: uv sync --locked   # Python version from .python-version (same as the Dockerfile)
+
+      - name: Django checks
+        run: |
+          uv run python manage.py check
+          uv run python manage.py makemigrations --check --dry-run
+
+      - name: Django tests
+        run: uv run python manage.py test
+
+      - name: Docker image builds
+        run: docker build -t kalaichol:ci .
+
+  deploy:
+    name: Deploy to the server
+    needs: test
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment: production
+    # Never run two deploys or server tasks at once; queue them instead.
+    concurrency:
+      group: kalaichol-production
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: .github/actions
+
+      - uses: ./.github/actions/server-task
+        with:
+          task: deploy ${{ github.sha }}
+          ssh-key: ${{ secrets.DEPLOY_SSH_KEY }}
+          host: ${{ secrets.DEPLOY_SSH_HOST }}
+          user: ${{ secrets.DEPLOY_SSH_USER }}
+          known-hosts: ${{ secrets.DEPLOY_KNOWN_HOSTS }}

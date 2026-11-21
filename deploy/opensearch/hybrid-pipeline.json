@@ -1,0 +1,14 @@
+{
+  "description": "Kalaichol hybrid search: lexical (BM25 + boosts) and meaning (kNN) scores normalised and blended",
+  "phase_results_processors": [
+    {
+      "normalization-processor": {
+        "normalization": { "technique": "min_max" },
+        "combination": {
+          "technique": "arithmetic_mean",
+          "parameters": { "weights": [0.75, 0.25] }
+        }
+      }
+    }
+  ]
+}

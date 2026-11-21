@@ -1,0 +1,335 @@
+{
+  "settings": {
+    "index": {
+      "number_of_shards": 1,
+      "number_of_replicas": 0,
+      "refresh_interval": "1s",
+      "max_ngram_diff": 18,
+      "knn": false
+    },
+    "analysis": {
+      "char_filter": {
+        "ta_clean": {
+          "type": "mapping",
+          "mappings": [
+            "\\u200C=>",
+            "\\u200D=>",
+            "\\u00AD=>",
+            "ா்=>ர்",
+            "ை்=>ய்"
+          ]
+        }
+      },
+      "tokenizer": {
+        "edge_1_20": {
+          "type": "edge_ngram",
+          "min_gram": 1,
+          "max_gram": 20,
+          "token_chars": [
+            "letter",
+            "digit",
+            "whitespace",
+            "punctuation"
+          ]
+        }
+      },
+      "filter": {
+        "ta_nfc": {
+          "type": "icu_normalizer",
+          "name": "nfc"
+        },
+        "edge_1_15": {
+          "type": "edge_ngram",
+          "min_gram": 1,
+          "max_gram": 15
+        },
+        "gram_2_3": {
+          "type": "ngram",
+          "min_gram": 2,
+          "max_gram": 3
+        },
+        "gram_3": {
+          "type": "ngram",
+          "min_gram": 3,
+          "max_gram": 3
+        },
+        "en_possessive": {
+          "type": "stemmer",
+          "language": "possessive_english"
+        },
+        "en_stem": {
+          "type": "stemmer",
+          "language": "light_english"
+        },
+        "rk_long_vowels": {
+          "type": "pattern_replace",
+          "pattern": "([aeiou])\\1+",
+          "replacement": "$1"
+        },
+        "rk_zh": {
+          "type": "pattern_replace",
+          "pattern": "zh|z",
+          "replacement": "l"
+        },
+        "rk_aspirates": {
+          "type": "pattern_replace",
+          "pattern": "([kgcjtdpb])h",
+          "replacement": "$1"
+        },
+        "rk_sh": {
+          "type": "pattern_replace",
+          "pattern": "sh|ch|s|j",
+          "replacement": "c"
+        },
+        "rk_voicing": {
+          "type": "pattern_replace",
+          "pattern": "g",
+          "replacement": "k"
+        },
+        "rk_voicing_d": {
+          "type": "pattern_replace",
+          "pattern": "d",
+          "replacement": "t"
+        },
+        "rk_voicing_b": {
+          "type": "pattern_replace",
+          "pattern": "b|f",
+          "replacement": "p"
+        },
+        "rk_w": {
+          "type": "pattern_replace",
+          "pattern": "w",
+          "replacement": "v"
+        },
+        "rk_ee": {
+          "type": "pattern_replace",
+          "pattern": "ee",
+          "replacement": "i"
+        },
+        "rk_oo": {
+          "type": "pattern_replace",
+          "pattern": "oo",
+          "replacement": "u"
+        },
+        "rk_diphthong": {
+          "type": "pattern_replace",
+          "pattern": "ai|ay|ei",
+          "replacement": "e"
+        },
+        "rk_glide": {
+          "type": "pattern_replace",
+          "pattern": "y(?=[aeiou])|(?<=[aeiou])y",
+          "replacement": ""
+        },
+        "rk_double": {
+          "type": "pattern_replace",
+          "pattern": "([b-df-hj-np-tv-z])\\1+",
+          "replacement": "$1"
+        }
+      },
+      "normalizer": {
+        "en_keyword": {
+          "type": "custom",
+          "filter": [
+            "lowercase",
+            "asciifolding"
+          ]
+        },
+        "ta_keyword": {
+          "type": "custom",
+          "char_filter": [
+            "ta_clean"
+          ],
+          "filter": [
+            "ta_nfc"
+          ]
+        }
+      },
+      "analyzer": {
+        "en_text": {
+          "type": "custom",
+          "tokenizer": "standard",
+          "filter": [
+            "lowercase",
+            "asciifolding"
+          ]
+        },
+        "en_stem": {
+          "type": "custom",
+          "tokenizer": "standard",
+          "filter": [
+            "en_possessive",
+            "lowercase",
+            "asciifolding",
+            "en_stem"
+          ]
+        },
+        "en_prefix_index": {
+          "type": "custom",
+          "tokenizer": "edge_1_20",
+          "filter": [
+            "lowercase",
+            "asciifolding"
+          ]
+        },
+        "en_prefix_search": {
+          "type": "custom",
+          "tokenizer": "keyword",
+          "filter": [
+            "lowercase",
+            "asciifolding"
+          ]
+        },
+        "en_gram": {
+          "type": "custom",
+          "tokenizer": "standard",
+          "filter": [
+            "lowercase",
+            "asciifolding",
+            "gram_3"
+          ]
+        },
+        "ta_text": {
+          "type": "custom",
+          "char_filter": [
+            "ta_clean"
+          ],
+          "tokenizer": "standard",
+          "filter": [
+            "ta_nfc"
+          ]
+        },
+        "ta_prefix_index": {
+          "type": "custom",
+          "char_filter": [
+            "ta_clean"
+          ],
+          "tokenizer": "standard",
+          "filter": [
+            "ta_nfc",
+            "edge_1_15"
+          ]
+        },
+        "ta_gram": {
+          "type": "custom",
+          "char_filter": [
+            "ta_clean"
+          ],
+          "tokenizer": "standard",
+          "filter": [
+            "ta_nfc",
+            "gram_2_3"
+          ]
+        },
+        "roman_key": {
+          "type": "custom",
+          "tokenizer": "standard",
+          "filter": [
+            "lowercase",
+            "asciifolding",
+            "rk_aspirates",
+            "rk_zh",
+            "rk_sh",
+            "rk_voicing",
+            "rk_voicing_d",
+            "rk_voicing_b",
+            "rk_w",
+            "rk_ee",
+            "rk_oo",
+            "rk_diphthong",
+            "rk_glide",
+            "rk_double",
+            "rk_long_vowels"
+          ]
+        }
+      }
+    }
+  },
+  "mappings": {
+    "dynamic": "strict",
+    "properties": {
+      "headword": {
+        "type": "text",
+        "analyzer": "ta_text",
+        "fields": {
+          "exact": {
+            "type": "keyword",
+            "normalizer": "ta_keyword"
+          },
+          "prefix": {
+            "type": "text",
+            "analyzer": "ta_prefix_index",
+            "search_analyzer": "ta_text"
+          },
+          "gram": {
+            "type": "text",
+            "analyzer": "ta_gram"
+          }
+        }
+      },
+      "roman": {
+        "type": "text",
+        "analyzer": "roman_key",
+        "fields": {
+          "plain": {
+            "type": "text",
+            "analyzer": "en_text"
+          }
+        }
+      },
+      "forms": {
+        "type": "keyword",
+        "normalizer": "ta_keyword"
+      },
+      "pos": {
+        "type": "keyword"
+      },
+      "registers": {
+        "type": "keyword"
+      },
+      "domains": {
+        "type": "keyword"
+      },
+      "sources": {
+        "type": "keyword"
+      },
+      "senses_en": {
+        "type": "text",
+        "analyzer": "en_stem",
+        "fields": {
+          "plain": {
+            "type": "text",
+            "analyzer": "en_text"
+          }
+        }
+      },
+      "definition_ta": {
+        "type": "text",
+        "analyzer": "ta_text"
+      },
+      "synonyms": {
+        "type": "text",
+        "analyzer": "ta_text",
+        "fields": {
+          "exact": {
+            "type": "keyword",
+            "normalizer": "ta_keyword"
+          }
+        }
+      },
+      "antonyms": {
+        "type": "keyword",
+        "normalizer": "ta_keyword"
+      },
+      "linked_term_ids": {
+        "type": "long"
+      },
+      "has_definition": {
+        "type": "boolean"
+      },
+      "indexed_at": {
+        "type": "date"
+      }
+    }
+  }
+}

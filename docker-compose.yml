@@ -3,27 +3,45 @@
 #             docker compose exec web python manage.py import_wiktionary
 #             docker compose exec web python manage.py import_english
 #             docker compose exec web python manage.py build_embeddings
+#
+# Shares a server with other apps: own project name (containers/networks are
+# prefixed "kalaichol-"), own data folder, Postgres not published to the host,
+# web only on 127.0.0.1 so it is reached through the reverse proxy (deploy/Caddyfile).
+# Check free ports first with `ss -tlnp` and change WEB_PORT in .env if 8081 is taken.
+name: kalaichol
+
 services:
   db:
-    image: postgres:16
+    image: postgres:16-alpine
     restart: unless-stopped
     environment:
       POSTGRES_DB: kalaichol
       POSTGRES_USER: kalaichol
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
-    volumes: [pgdata:/var/lib/postgresql/data]
+    volumes:
+      - ./data/pgdata:/var/lib/postgresql/data
+    # debugging only: host access on a port that won't clash with a local Postgres
+    # ports: ["127.0.0.1:5433:5432"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U kalaichol -d kalaichol"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
   web:
     build: .
     restart: unless-stopped
-    depends_on: [db]
+    depends_on:
+      db:
+        condition: service_healthy
     env_file: .env
     environment:
       POSTGRES_HOST: db
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-    ports: ["8000:8000"]
+    ports: ["127.0.0.1:${WEB_PORT:-8081}:8000"]
     volumes:
       - models:/models                   # embedding + translation models survive rebuilds
       - ./data_raw:/app/data_raw         # source data, NLLB model (data_raw/nllb-ct2), NLTK data
+
 volumes:
-  pgdata:
   models:

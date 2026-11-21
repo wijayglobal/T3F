@@ -31,6 +31,18 @@ class Status(models.TextChoices):
     REJECTED = "rejected", "மறுக்கப்பட்டது · Rejected"
 
 
+class Register(models.TextChoices):
+    """Usage label from the source (Wiktionary sense tags). Blank means unmarked."""
+
+    COLLOQUIAL = "colloquial", "பேச்சு வழக்கு · Colloquial"
+    FORMAL = "formal", "முறைசார் · Formal"
+    LITERARY = "literary", "இலக்கிய வழக்கு · Literary"
+    DATED = "dated", "பழைய வழக்கு · Dated"
+    RARE = "rare", "அரிய வழக்கு · Rare"
+    ARCHAIC = "archaic", "தொல் வழக்கு · Archaic"
+    OBSOLETE = "obsolete", "வழக்கொழிந்தது · Obsolete"
+
+
 class Term(models.Model):
     """An English headword users look up (e.g. "server")."""
 
@@ -66,6 +78,11 @@ class Suggestion(models.Model):
     source_kind = models.CharField(max_length=12, choices=SourceKind.choices, default=SourceKind.SELF)
     source_url = models.URLField(max_length=500, blank=True)
     source_ref = models.CharField(max_length=200, blank=True)  # e.g. "TVA_BOK_0006216, p. 223"
+    # The source's own wording of the meaning this rendering stands for, e.g. Wiktionary's
+    # "yellow, brown, tawny, fawn colour" for அரி. Lets one term show each source's sense side by side.
+    sense = models.CharField(max_length=300, blank=True)
+    domain = models.CharField(max_length=40, blank=True)  # subject slug from lexicon/domains.json
+    register = models.CharField(max_length=12, choices=Register.choices, blank=True)
     author = models.ForeignKey(
         settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL,
         related_name="suggestions",
@@ -153,6 +170,87 @@ class Relation(models.Model):
         constraints = [
             models.UniqueConstraint(fields=["word", "other", "kind"], name="uniq_relation")
         ]
+
+
+class Attestation(models.Model):
+    """One source vouching for a rendering. A pair like yellow fever → மஞ்சள் காய்ச்சல் is one Suggestion
+    (it is rated and reviewed once) but appears in five books; each book keeps its own row here, with its
+    own wording of the meaning, subject and page. The Suggestion's source fields are the first source."""
+
+    suggestion = models.ForeignKey(Suggestion, on_delete=models.CASCADE, related_name="attestations")
+    source = models.CharField(max_length=200)
+    source_kind = models.CharField(max_length=12, choices=SourceKind.choices)
+    source_url = models.URLField(max_length=500, blank=True)
+    source_ref = models.CharField(max_length=200, blank=True)
+    license = models.CharField(max_length=60, blank=True)
+    sense = models.CharField(max_length=300, blank=True)
+    domain = models.CharField(max_length=40, blank=True)
+    register = models.CharField(max_length=12, choices=Register.choices, blank=True)
+    note = models.TextField(blank=True)
+
+    class Meta:
+        constraints = [models.UniqueConstraint(fields=["suggestion", "source"], name="uniq_attestation")]
+
+    def __str__(self):
+        return f"{self.suggestion} · {self.source}"
+
+
+class SuggestionRelation(models.Model):
+    """A synonym / antonym / related word for one rendering, in the sense the source gave it.
+
+    `Relation` links Tamil words regardless of meaning, so அரன் ("yellow", obsolete) inherits every
+    name of Shiva. These rows only hold the words listed under the sense that produced the suggestion.
+    """
+
+    SYNONYM, ANTONYM, RELATED = "syn", "ant", "rel"
+    KINDS = [(SYNONYM, "Synonym"), (ANTONYM, "Antonym"), (RELATED, "Related")]
+
+    suggestion = models.ForeignKey(Suggestion, on_delete=models.CASCADE, related_name="sense_relations")
+    word = models.CharField(max_length=200)
+    kind = models.CharField(max_length=3, choices=KINDS)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["suggestion", "word", "kind"], name="uniq_suggestion_relation")
+        ]
+
+
+class TamilSense(models.Model):
+    """One meaning of a Tamil headword, as its source states it (all of them, not only the ones that
+    became an English Term). Wiktionary senses carry an English gloss; ta-ta dictionaries a Tamil one."""
+
+    word = models.CharField(max_length=200, db_index=True)
+    pos = models.CharField(max_length=30, blank=True)
+    gloss = models.TextField()
+    gloss_lang = models.CharField(max_length=2, default="en")  # "en" or "ta"
+    register = models.CharField(max_length=12, choices=Register.choices, blank=True)
+    domain = models.CharField(max_length=40, blank=True)
+    roman = models.CharField(max_length=200, blank=True)
+    example = models.TextField(blank=True)  # first usage example, "tamil — english"
+    source = models.CharField(max_length=200)
+    source_url = models.URLField(max_length=500, blank=True)
+    license = models.CharField(max_length=60, blank=True)
+    ref = models.CharField(max_length=120)  # stable id within the source (Wiktionary sense id, hash)
+    position = models.PositiveSmallIntegerField(default=0)  # order of the sense in its entry
+
+    class Meta:
+        ordering = ["word", "position"]
+        constraints = [models.UniqueConstraint(fields=["source", "ref"], name="uniq_tamil_sense")]
+
+    def __str__(self):
+        return f"{self.word}: {self.gloss[:60]}"
+
+
+class TamilForm(models.Model):
+    """An inflected form and the headword it belongs to (Wiktionary inflection tables):
+    அடித்தான் → அடி. Lets a search for an inflected word find its root."""
+
+    form = models.CharField(max_length=200)
+    lemma = models.CharField(max_length=200, db_index=True)
+    tags = models.CharField(max_length=120, blank=True)  # "past, masculine, singular, third-person"
+
+    class Meta:
+        constraints = [models.UniqueConstraint(fields=["form", "lemma"], name="uniq_tamil_form")]
 
 
 class Report(models.Model):

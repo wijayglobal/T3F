@@ -1,0 +1,33 @@
+name: Scheduled backup
+
+# Once a day (03:30 India time): pg_dump the database on the server into backups/ (14 days kept).
+# A failed dump turns the run red and GitHub emails you. Also runs by hand: Actions → Scheduled backup.
+on:
+  schedule:
+    - cron: "0 22 * * *"   # UTC = 03:30 IST; GitHub may start it a few minutes late
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  backup:
+    name: Back up the database
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: production
+    concurrency:
+      group: kalaichol-production
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: .github/actions
+
+      - uses: ./.github/actions/server-task
+        with:
+          task: backup
+          ssh-key: ${{ secrets.DEPLOY_SSH_KEY }}
+          host: ${{ secrets.DEPLOY_SSH_HOST }}
+          user: ${{ secrets.DEPLOY_SSH_USER }}
+          known-hosts: ${{ secrets.DEPLOY_KNOWN_HOSTS }}

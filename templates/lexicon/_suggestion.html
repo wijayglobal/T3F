@@ -7,25 +7,24 @@
     {% if s.status == "pending" %}<span class="chip chip-pending">காத்திருப்பு · awaiting review</span>{% elif s.status == "draft" %}<span class="chip machine">வரைவு · unreviewed draft</span>{% elif s.status == "approved" and s.author_id %}<span class="chip chip-ok">✔ approved</span>{% endif %}
     {% if s.pos %}<span class="pos">{{ s.pos }}</span>{% endif %}
   </div>
-  {% if s.note %}<p class="note">{{ s.note }}</p>{% endif %}
-  {% with rel=relations|get:s.tamil %}
-  {% if rel %}
+  {% if s.note %}{% if s.note|length > 180 %}<details class="note note-long"><summary>{{ s.note|truncatechars:140 }}</summary>{{ s.note }}</details>{% else %}<p class="note">{{ s.note }}</p>{% endif %}{% endif %}
+  {% if s.related %}
   <p class="rels">
-    {% if rel.syn %}<span><b>ஒத்த சொற்கள் · Synonyms</b> {% for w in rel.syn|slice:":8" %}<a href="{% url 'lexicon:results' %}?q={{ w|urlencode }}">{{ w }}</a>{% endfor %}</span>{% endif %}
-    {% if rel.ant %}<span><b>எதிர்ச்சொற்கள் · Antonyms</b> {% for w in rel.ant|slice:":8" %}<a href="{% url 'lexicon:results' %}?q={{ w|urlencode }}">{{ w }}</a>{% endfor %}</span>{% endif %}
+    {% if s.related.syn %}<span><b>ஒத்த சொற்கள் · Synonyms</b> {% for w in s.related.syn %}<a href="{% url 'lexicon:results' %}?q={{ w|urlencode }}">{{ w }}</a>{% endfor %}</span>{% endif %}
+    {% if s.related.ant %}<span><b>எதிர்ச்சொற்கள் · Antonyms</b> {% for w in s.related.ant %}<a href="{% url 'lexicon:results' %}?q={{ w|urlencode }}">{{ w }}</a>{% endfor %}</span>{% endif %}
+    {% if s.related.rel %}<span><b>தொடர்புடையவை · Related</b> {% for w in s.related.rel %}<a href="{% url 'lexicon:results' %}?q={{ w|urlencode }}">{{ w }}</a>{% endfor %}</span>{% endif %}
+    {% if s.related_scope == "word" %}<span class="rel-scope">for any meaning of {{ s.tamil }}</span>{% endif %}
   </p>
   {% endif %}
-  {% endwith %}
+  {% if s.other_meanings %}
+  <p class="rels other-meanings"><span><b>மற்ற பொருள்கள் · Other meanings</b>
+    {% for m in s.other_meanings %}<span class="meaning">{{ m.gloss }}{% if m.register %} <i>({{ m.register }})</i>{% endif %}</span>{% if not forloop.last %}; {% endif %}{% endfor %}</span></p>
+  {% endif %}
   <div class="sug-foot">
     <div class="stars" data-url="{% url 'lexicon:rate' s.id %}" data-mine="{{ user_ratings|get:s.id|default:0 }}" {% if not user.is_authenticated %}data-anon="1"{% endif %}>
       {% for i in "12345" %}<button type="button" class="star" data-v="{{ i }}" aria-label="{{ i }} star">★</button>{% endfor %}
       <span class="avg"><b>{{ s.rating_avg|floatformat:1 }}</b> ({{ s.rating_count }})</span>
     </div>
-    <span class="src" title="{{ s.get_source_kind_display }}">
-      <b>Source:</b>
-      {% if s.source_kind == "self" %}{{ s.source|default:"contributor" }} (own word)
-      {% else %}{% if s.source_url %}<a href="{{ s.source_url }}" target="_blank" rel="noopener nofollow">{{ s.source|default:s.source_ref|default:s.source_url }}</a>{% else %}{{ s.source }}{% endif %}{% if s.source_ref and s.source_url %} · {{ s.source_ref }}{% elif s.source_ref and s.source_kind == "book" %} · {{ s.source_ref }}{% endif %}{% endif %}
-    </span>
     {% if user.is_authenticated %}
     <details class="report">
       <summary>report</summary>
@@ -38,4 +37,17 @@
     </details>
     {% endif %}
   </div>
+  <details class="sources"{% if s.sources|length <= 3 %} open{% endif %}>
+    <summary>ஆதாரங்கள் · Sources ({{ s.sources|length }})</summary>
+    <ul>
+      {% for a in s.sources %}
+      <li>
+        <span class="src-name">{% if a.source_kind == "self" %}{{ a.source|default:"contributor" }} (own word){% elif a.source_url %}<a href="{{ a.source_url }}" target="_blank" rel="noopener nofollow">{{ a.source|default:a.source_url }}</a>{% else %}{{ a.source|default:a.get_source_kind_display }}{% endif %}{% if a.source_ref and a.source_ref != "mydictionary.in" %} · {{ a.source_ref }}{% endif %}</span>
+        {% if a.domain %}<span class="chip chip-domain">{{ a.domain|domain_label }}</span>{% endif %}
+        {% if a.register %}<span class="chip chip-register">{{ a.get_register_display }}</span>{% endif %}
+        {% if a.sense %}<span class="sense">“{{ a.sense }}”</span>{% endif %}
+      </li>
+      {% endfor %}
+    </ul>
+  </details>
 </li>

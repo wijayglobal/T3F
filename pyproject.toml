@@ -1,0 +1,35 @@
+[project]
+name = "kalaichol"
+version = "0.1.0"
+description = "English → Tamil term lookup (கலைச்சொல்)"
+readme = "README.md"
+requires-python = ">=3.11,<3.12"
+# What the website needs at run time. The data tools are in the "data" group below.
+dependencies = [
+    "django>=5.1,<5.2",
+    "django-allauth>=65",
+    "gunicorn",
+    "whitenoise",
+    "psycopg[binary]",
+    "numpy",
+    "fastembed",
+    "pydantic>=2.7,<3",
+]
+
+[dependency-groups]
+# Data collection and export commands only (machine_draft, import_english, export_dataset, push_hf).
+# ~400 MB, so the Docker image leaves them out unless built with --build-arg UV_GROUPS=--all-groups.
+data = [
+    "ctranslate2",
+    "sentencepiece",
+    "nltk",
+    "wordfreq",
+    "pyarrow",
+    "huggingface-hub",
+]
+
+[tool.uv]
+# Local `uv sync` installs the data tools too.
+default-groups = ["data"]
+# A Django app, not an installable package: only the dependencies are installed.
+package = false
