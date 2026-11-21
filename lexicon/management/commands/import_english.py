@@ -27,7 +27,7 @@ class Command(BaseCommand):
 
         glosses, relations = {}, set()
         for syn in wn.all_synsets():
-            names = [norm(l.name()) for l in syn.lemmas()]
+            names = [norm(lemma.name()) for lemma in syn.lemmas()]
             for n in names:
                 glosses.setdefault(n, syn.definition()[:300])
             if len(names) <= 8:
@@ -35,9 +35,9 @@ class Command(BaseCommand):
                     for b in names:
                         if a != b:
                             relations.add((a, b, Relation.SYNONYM))
-            for l in syn.lemmas():
-                for ant in l.antonyms():
-                    relations.add((norm(l.name()), norm(ant.name()), Relation.ANTONYM))
+            for lemma in syn.lemmas():
+                for ant in lemma.antonyms():
+                    relations.add((norm(lemma.name()), norm(ant.name()), Relation.ANTONYM))
         self.stdout.write(f"WordNet: {len(glosses)} lemmas, {len(relations)} relations")
 
         plain = set()

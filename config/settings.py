@@ -13,6 +13,8 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 import os
 from pathlib import Path
 
+from django.core.exceptions import ImproperlyConfigured
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -20,18 +22,32 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
 
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", "django-insecure-dev-only-change-me")
+
+def env_list(name, default=""):
+    """Comma-separated environment variable -> list without blanks."""
+    return [x.strip() for x in os.environ.get(name, default).split(",") if x.strip()]
+
 
 # SECURITY WARNING: don't run with debug turned on in production!
+# Local `runserver` defaults to debug; the Docker image sets DJANGO_DEBUG=0.
 DEBUG = os.environ.get("DJANGO_DEBUG", "1") == "1"
 
-ALLOWED_HOSTS = os.environ.get("ALLOWED_HOSTS", "*" if DEBUG else "localhost").split(
-    ","
+# SECURITY WARNING: keep the secret key used in production secret!
+_DEV_SECRET_KEY = "django-insecure-dev-only-change-me"  # noqa: S105 - public on purpose, refused below
+SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", _DEV_SECRET_KEY)
+if not DEBUG and SECRET_KEY in ("", _DEV_SECRET_KEY):
+    # Refuse to run production with the public development key (sessions and password-reset
+    # tokens could be forged). `manage.py check --deploy` also warns about short keys.
+    raise ImproperlyConfigured(
+        "Set DJANGO_SECRET_KEY to a random string of 50+ characters when DJANGO_DEBUG=0, e.g.\n"
+        "  python -c 'import secrets; print(secrets.token_urlsafe(50))'"
+    )
+
+# Never "*": a wildcard host header enables cache poisoning and password-reset link spoofing.
+ALLOWED_HOSTS = env_list(
+    "ALLOWED_HOSTS", "localhost,127.0.0.1,[::1]" if DEBUG else "localhost"
 )
-CSRF_TRUSTED_ORIGINS = [
-    o for o in os.environ.get("CSRF_TRUSTED_ORIGINS", "").split(",") if o
-]
+CSRF_TRUSTED_ORIGINS = env_list("CSRF_TRUSTED_ORIGINS")
 
 
 # Application definition
@@ -59,6 +75,7 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     "allauth.account.middleware.AccountMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "lexicon.middleware.SecurityHeadersMiddleware",
 ]
 
 ROOT_URLCONF = "config.urls"
@@ -191,11 +208,31 @@ REVIEW_THRESHOLD = int(
 )  # net verified votes to approve/reject
 SITE_URL = os.environ.get("SITE_URL", "http://localhost:8765")  # used in embed snippets
 
+# --- security headers and cookies
+# CSP, Permissions-Policy and Cross-Origin-Opener-Policy are added by lexicon.middleware.
+X_FRAME_OPTIONS = "DENY"  # only the profile embed card (/u/<name>/embed/) may be framed
+SECURE_CONTENT_TYPE_NOSNIFF = True
+SECURE_REFERRER_POLICY = "strict-origin-when-cross-origin"
+SESSION_COOKIE_HTTPONLY = True
+SESSION_COOKIE_SAMESITE = CSRF_COOKIE_SAMESITE = "Lax"
+DATA_UPLOAD_MAX_MEMORY_SIZE = 2 * 1024 * 1024  # 2 MB is plenty for the bulk-add form
+
 if not DEBUG:
+    # The reverse proxy (deploy/Caddyfile) terminates TLS and sets X-Forwarded-Proto.
     SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
     SESSION_COOKIE_SECURE = CSRF_COOKIE_SECURE = (
         os.environ.get("SECURE_COOKIES", "1") == "1"
     )
+    # Caddy already redirects http -> https; set SECURE_SSL_REDIRECT=1 for other proxies.
+    SECURE_SSL_REDIRECT = os.environ.get("SECURE_SSL_REDIRECT", "0") == "1"
+    SECURE_HSTS_SECONDS = int(os.environ.get("SECURE_HSTS_SECONDS", "31536000"))
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = os.environ.get("SECURE_HSTS_INCLUDE_SUBDOMAINS", "0") == "1"
+    SECURE_HSTS_PRELOAD = os.environ.get("SECURE_HSTS_PRELOAD", "0") == "1"
+
+# --- rate limits
+# allauth throttles login, sign-up and password reset itself (ACCOUNT_RATE_LIMITS defaults).
+# Our own write endpoints (suggest, rate, report, review): this many per user per minute.
+WRITE_RATE_LIMIT = int(os.environ.get("WRITE_RATE_LIMIT", "30"))
 
 # --- admin approval of new accounts (off by default; admins approve in /manage/ or via Telegram)
 REQUIRE_USER_APPROVAL = os.environ.get("REQUIRE_USER_APPROVAL", "0") == "1"
@@ -214,5 +251,8 @@ LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
     "handlers": {"console": {"class": "logging.StreamHandler"}},
-    "loggers": {"kalaichol": {"handlers": ["console"], "level": "INFO"}},
+    "loggers": {
+        "kalaichol": {"handlers": ["console"], "level": "INFO"},
+        "django.security": {"handlers": ["console"], "level": "WARNING"},
+    },
 }

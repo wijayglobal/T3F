@@ -9,7 +9,15 @@ from django.db import transaction
 from lexicon.domains import for_topics
 from lexicon.importing import attest, suggestion_ids
 from lexicon.models import (
-    Attestation, Relation, SourceKind, Status, Suggestion, SuggestionRelation, TamilForm, TamilSense, Term,
+    Attestation,
+    Relation,
+    SourceKind,
+    Status,
+    Suggestion,
+    SuggestionRelation,
+    TamilForm,
+    TamilSense,
+    Term,
 )
 
 SOURCE, LICENSE = "Wiktionary (CC BY-SA)", "CC BY-SA 4.0"
@@ -186,7 +194,7 @@ class Command(BaseCommand):
                 batch_size=BATCH,
             )
             TamilForm.objects.bulk_create(
-                [TamilForm(form=f, lemma=l, tags=t) for (f, l), t in forms.items()],
+                [TamilForm(form=f, lemma=lemma, tags=t) for (f, lemma), t in forms.items()],
                 ignore_conflicts=True,
                 batch_size=BATCH,
             )

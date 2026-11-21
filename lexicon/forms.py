@@ -33,7 +33,7 @@ class SuggestionForm(forms.ModelForm):
 
 class ReportForm(forms.Form):
     reason = forms.ChoiceField(choices=Report.Reason.choices)
-    comment = forms.CharField(required=False, widget=forms.Textarea(attrs={"rows": 2}))
+    comment = forms.CharField(required=False, max_length=1000, widget=forms.Textarea(attrs={"rows": 2}))
 
 
 class ProfileForm(forms.ModelForm):

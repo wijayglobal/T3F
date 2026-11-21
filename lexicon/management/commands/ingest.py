@@ -50,10 +50,12 @@ def save(rows, name, license_, kind=SourceKind.WEB, status=Status.DRAFT, author=
 
 def get(url, tries=6):
     """GET JSON, backing off on 429/5xx (honouring Retry-After)."""
+    if not url.startswith(("https://", "http://")):
+        raise ValueError(f"refusing to fetch non-HTTP URL {url!r}")
     for i in range(tries):
-        req = urllib.request.Request(url, headers={"User-Agent": UA})
+        req = urllib.request.Request(url, headers={"User-Agent": UA})  # noqa: S310
         try:
-            with urllib.request.urlopen(req, timeout=60) as f:
+            with urllib.request.urlopen(req, timeout=60) as f:  # noqa: S310 - scheme checked above
                 return json.load(f)
         except urllib.error.HTTPError as e:
             if e.code not in (429, 500, 502, 503, 504) or i == tries - 1:

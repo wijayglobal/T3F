@@ -1,10 +1,15 @@
 {% extends "base.html" %}
+{% block title %}Add a word · கலைச்சொல்{% endblock %}
 {% block content %}
 <section class="card">
-  <h2>புதிய சொல் <small>Add an English word</small></h2>
+  <h1 class="h2"><span lang="ta">புதிய சொல்</span> <small>Add an English word</small></h1>
   <form method="post" class="stack">{% csrf_token %}
-    <p><label>English word<input name="word" value="{{ initial.word }}" required></label></p>
-    {{ form.as_p }}<button class="btn btn-red">சேர்</button>
+    <p>
+      <label for="id_word">English word</label>
+      <input id="id_word" name="word" value="{{ word }}" required maxlength="120" autocomplete="off"{% if word_error %} aria-invalid="true" aria-describedby="word-error"{% endif %}>
+      {% if word_error %}<span class="field-error" id="word-error">{{ word_error }}</span>{% endif %}
+    </p>
+    {{ form.as_p }}<button class="btn btn-red"><span lang="ta">சேர்</span> · Add word</button>
   </form>
 </section>
 {% endblock %}

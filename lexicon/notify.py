@@ -21,7 +21,7 @@ def api(method, payload):
         data=json.dumps(payload).encode(),
         headers={"Content-Type": "application/json"},
     )
-    with urllib.request.urlopen(req, timeout=15) as f:
+    with urllib.request.urlopen(req, timeout=15) as f:  # noqa: S310 - fixed https URL
         return json.load(f)
 
 

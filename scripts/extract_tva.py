@@ -51,19 +51,19 @@ def book1(pdf):
     for pno, page in enumerate(txt.split("\f"), 1):
         if pno < 16:  # front matter
             continue
-        lines = [l for l in page.split("\n") if l.strip()]
-        lines = [l for l in lines[1:] if not HEADER.match(l)] if lines and HEADER.match(lines[0]) else lines
-        indents = [len(m.group(1)) for l in lines if (m := SPLIT.match(l)) and LATIN.search(m.group(2))]
+        lines = [line for line in page.split("\n") if line.strip()]
+        lines = [line for line in lines[1:] if not HEADER.match(line)] if lines and HEADER.match(lines[0]) else lines
+        indents = [len(m.group(1)) for line in lines if (m := SPLIT.match(line)) and LATIN.search(m.group(2))]
         if not indents:
             continue
         base = min(indents)
         head = ""
-        for l in lines:
-            m = SPLIT.match(l)
+        for line in lines:
+            m = SPLIT.match(line)
             if not m:
                 # left-only line at main indent => compound headword with sub-lines below
-                s = l.strip()
-                if LATIN.search(s) and not TAMIL.search(s) and len(l) - len(l.lstrip()) <= base + 1:
+                s = line.strip()
+                if LATIN.search(s) and not TAMIL.search(s) and len(line) - len(line.lstrip()) <= base + 1:
                     head = clean_en(s.rstrip("-—–~"))
                 continue
             indent, left, right = len(m.group(1)), m.group(2).strip(), clean_ta(m.group(3))

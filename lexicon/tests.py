@@ -8,12 +8,18 @@ from django.core.management import call_command
 from django.test import TestCase
 from pydantic import ValidationError
 
-from lexicon import search
-from lexicon import ocr
+from lexicon import ocr, search
 from lexicon.domains import for_source, for_topics
 from lexicon.management.commands.import_wiktionary import gloss_terms
 from lexicon.models import (
-    Register, Relation, SourceKind, Status, Suggestion, SuggestionRelation, TamilForm, TamilSense, Term,
+    Register,
+    Relation,
+    SourceKind,
+    Status,
+    Suggestion,
+    TamilForm,
+    TamilSense,
+    Term,
 )
 from lexicon.schemas import Direction, Licence, ScrapedEntry, validate_file
 
@@ -315,3 +321,113 @@ class SemanticIndexTests(TestCase):
         finally:
             search.embed = real
         self.assertEqual([Term.objects.get(id=i).text for i, _ in hits], ["base", "acid"])
+
+
+class SecurityTests(TestCase):
+    """Headers, redirects, URL sanitising and rate limits added in the security pass."""
+
+    def setUp(self):
+        from allauth.account.models import EmailAddress
+        from django.contrib.auth import get_user_model
+        from django.core.cache import cache
+
+        cache.clear()
+        self.user = get_user_model().objects.create_user("asha", "asha@example.com", "pw-not-used-0192")
+        EmailAddress.objects.create(user=self.user, email=self.user.email, verified=True, primary=True)
+        self.term = Term.objects.create(text="server")
+        self.sug = Suggestion.objects.create(term=self.term, tamil="வழங்கி", status=Status.APPROVED)
+        self.client.force_login(self.user)
+
+    def test_security_headers(self):
+        r = self.client.get("/")
+        csp = r.headers["Content-Security-Policy"]
+        self.assertIn("script-src 'self'", csp)
+        self.assertIn("frame-ancestors 'none'", csp)
+        self.assertEqual(r.headers["X-Frame-Options"], "DENY")
+        self.assertIn("camera=()", r.headers["Permissions-Policy"])
+        self.assertEqual(r.headers["Referrer-Policy"], "strict-origin-when-cross-origin")
+
+    def test_embed_card_can_be_framed(self):
+        r = self.client.get("/u/asha/embed/")
+        self.assertEqual(r.status_code, 200)
+        self.assertIn("frame-ancestors *", r.headers["Content-Security-Policy"])
+        self.assertNotIn("X-Frame-Options", r.headers)
+
+    def test_report_next_cannot_redirect_off_site(self):
+        r = self.client.post(f"/suggestion/{self.sug.id}/report/", {"reason": "wrong", "next": "https://evil.example/"})
+        self.assertRedirects(r, "/", fetch_redirect_response=False)
+        r = self.client.post(f"/suggestion/{self.sug.id}/report/", {"reason": "wrong", "next": "/search/?q=x"})
+        self.assertRedirects(r, "/search/?q=x", fetch_redirect_response=False)
+
+    def test_login_redirect_keeps_query_encoded(self):
+        self.client.logout()
+        r = self.client.get("/new/?q=a&b=c")
+        self.assertEqual(r.status_code, 302)
+        self.assertIn("next=/new/%3Fq%3Da%26b%3Dc", r.url)
+
+    def test_safe_url_filter(self):
+        from lexicon.templatetags.lex import safe_url
+
+        self.assertEqual(safe_url("https://example.com/x"), "https://example.com/x")
+        self.assertEqual(safe_url("javascript:alert(1)"), "")
+        self.assertEqual(safe_url(" JaVaScRiPt:alert(1)"), "")
+        self.assertEqual(safe_url("data:text/html,x"), "")
+        self.assertEqual(safe_url(None), "")
+
+    def test_imported_javascript_link_is_not_rendered(self):
+        self.sug.source_url = "javascript:alert(1)"
+        self.sug.source = "Evil"
+        self.sug.save()
+        html = self.client.get(f"/term/{self.term.id}/").content.decode()
+        self.assertNotIn("javascript:", html)
+
+    def test_write_rate_limit(self):
+        other = Suggestion.objects.create(term=self.term, tamil="சேவையகம்", status=Status.APPROVED)
+        with self.settings(WRITE_RATE_LIMIT=2):
+            codes = [
+                self.client.post(f"/suggestion/{other.id}/rate/", {"value": 4}, HTTP_ACCEPT="application/json").status_code
+                for _ in range(3)
+            ]
+        self.assertEqual(codes, [200, 200, 429])
+
+    def test_new_term_keeps_input_and_shows_errors(self):
+        r = self.client.post("/new/", {"word": "router", "tamil": "", "region": "common", "source_kind": "self"})
+        self.assertEqual(r.status_code, 200)
+        html = r.content.decode()
+        self.assertIn('value="router"', html)
+        self.assertIn('aria-invalid="true"', html)
+
+    def test_pages_have_skip_link_and_labelled_search(self):
+        html = self.client.get("/search/", {"q": "server"}).content.decode()
+        self.assertIn('href="#main"', html)
+        self.assertIn('<main id="main"', html)
+        self.assertIn('<label class="sr-only" for="mini-q">', html)
+        self.assertIn('lang="ta"', html)
+        self.assertIn('aria-pressed="false"', html)  # star buttons expose their state
+
+    def test_query_length_is_capped(self):
+        r = self.client.get("/suggest/", {"q": "a" * 5000})
+        self.assertEqual(r.status_code, 200)
+
+    def test_review_queue_renders_safe_links(self):
+        Suggestion.objects.create(term=self.term, tamil="சேவையகம்", status=Status.DRAFT,
+                                  source_kind=SourceKind.MACHINE, source_url="javascript:alert(1)")
+        r = self.client.get("/review/", {"kind": "machine"})
+        self.assertEqual(r.status_code, 200)
+        self.assertContains(r, "சேவையகம்")
+        self.assertNotContains(r, "javascript:")
+
+    def test_staff_pages_render(self):
+        self.user.is_staff = True
+        self.user.save()
+        for url in ("/manage/", "/manage/users/", "/manage/users/?f=all", "/manage/words/", "/manage/reports/", "/contributors/", "/u/asha/"):
+            self.assertEqual(self.client.get(url).status_code, 200, url)
+
+    def test_user_action_ignores_foreign_referer(self):
+        from django.contrib.auth import get_user_model
+
+        self.user.is_staff = True
+        self.user.save()
+        other = get_user_model().objects.create_user("bala", "bala@example.com", "pw-not-used-0192")
+        r = self.client.post(f"/manage/users/{other.id}/", {"action": "approve"}, HTTP_REFERER="https://evil.example/")
+        self.assertRedirects(r, "/manage/users/", fetch_redirect_response=False)

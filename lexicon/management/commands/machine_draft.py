@@ -44,7 +44,7 @@ class Command(BaseCommand):
                 src, target_prefix=[["tam_Taml"]] * len(src), beam_size=4, max_decoding_length=40
             )
             rows = []
-            for (tid, text, gloss), r in zip(chunk, res):
+            for (tid, text, gloss), r in zip(chunk, res, strict=False):
                 toks = r.hypotheses[0]
                 toks = toks[1:] if toks and toks[0] == "tam_Taml" else toks
                 ta = sp.decode(toks).strip()

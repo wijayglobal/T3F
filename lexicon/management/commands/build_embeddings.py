@@ -17,7 +17,7 @@ class Command(BaseCommand):
         for i in range(0, len(terms), 256):
             chunk = terms[i : i + 256]
             vecs = embed([t.text for t in chunk])
-            for t, v in zip(chunk, vecs):
+            for t, v in zip(chunk, vecs, strict=False):
                 t.embedding = v.tobytes()
             Term.objects.bulk_update(chunk, ["embedding"])
             self.stdout.write(f"  {min(i + 256, len(terms))}/{len(terms)}")

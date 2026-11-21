@@ -39,14 +39,14 @@ function lookup(q,m){
 function render(rows,msg){
   const r=$('#results');
   if(!rows.length){r.innerHTML='<p class="msg">'+(msg||'No results found.')+'</p>';return}
-  r.innerHTML='<table><tr><th>Tamil</th><th>Meaning</th><th></th></tr>'+rows.map(w=>
-    `<tr><td><strong>${esc(w[0])}</strong><br><small>${esc(w[1])} ${w[2]?'· '+esc(w[2]):''}</small></td>
-     <td class="m" title="Click to copy">${w[3].map(esc).join('<br>')}</td>
-     <td><button class="star ${favs.includes(w[0])?'on':''}" data-w="${esc(w[0])}">★</button></td></tr>`).join('')+'</table>';
+  r.innerHTML='<table><caption class="sr-only">'+rows.length+' results</caption><thead><tr><th scope="col">Tamil</th><th scope="col">Meaning</th><th scope="col"><span class="sr-only">Favourite</span></th></tr></thead><tbody>'+rows.map(w=>
+    `<tr><td><strong lang="ta">${esc(w[0])}</strong><br><small>${esc(w[1])} ${w[2]?'· '+esc(w[2]):''}</small></td>
+     <td class="m" title="Click to copy" tabindex="0" role="button" aria-label="Copy meaning: ${esc(w[3].join('; '))}">${w[3].map(esc).join('<br>')}</td>
+     <td><button class="star ${favs.includes(w[0])?'on':''}" data-w="${esc(w[0])}" aria-label="Favourite ${esc(w[0])}" aria-pressed="${favs.includes(w[0])}">★</button></td></tr>`).join('')+'</tbody></table>';
 }
 function showRecent(){
   $('#recentBox').hidden=!recent.length;
-  $('#recent').innerHTML=recent.map(x=>`<a>${esc(x)}</a>`).join('');
+  $('#recent').innerHTML=recent.map(x=>`<button type="button" class="linkish">${esc(x)}</button>`).join(' ');
 }
 function search(q){
   $('#q').value=q;
@@ -54,14 +54,18 @@ function search(q){
   if(rows.length&&!recent.includes(q)){recent=[q,...recent].slice(0,8);save('recent',recent);showRecent()}
 }
 $('#form').addEventListener('submit',e=>{e.preventDefault();search($('#q').value)});
-$('#recent').addEventListener('click',e=>{if(e.target.tagName==='A')search(e.target.textContent)});
+$('#recent').addEventListener('click',e=>{if(e.target.tagName==='BUTTON')search(e.target.textContent)});
 $('#results').addEventListener('click',e=>{
   if(e.target.classList.contains('star')){
     const w=e.target.dataset.w;
-    favs=favs.includes(w)?favs.filter(x=>x!==w):[...favs,w];save('favs',favs);e.target.classList.toggle('on');
+    favs=favs.includes(w)?favs.filter(x=>x!==w):[...favs,w];save('favs',favs);
+    e.target.setAttribute('aria-pressed',String(e.target.classList.toggle('on')));
   } else if(e.target.classList.contains('m')){
     navigator.clipboard?.writeText(e.target.innerText);
   }
+});
+$('#results').addEventListener('keydown',e=>{
+  if((e.key==='Enter'||e.key===' ')&&e.target.classList.contains('m')){e.preventDefault();e.target.click()}
 });
 $('#favLink').addEventListener('click',e=>{
   e.preventDefault();
@@ -73,13 +77,14 @@ document.addEventListener('keydown',e=>{
 let vlang='en-US';
 $('#lang').addEventListener('click',()=>{
   vlang=vlang==='en-US'?'ta-IN':'en-US';$('#lang').textContent=vlang==='en-US'?'EN':'TA';
+  $('#lang').setAttribute('aria-label','Voice language: '+(vlang==='en-US'?'English':'Tamil'));
 });
 $('#mic').addEventListener('click',()=>{
   const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
   if(!SR){alert('Voice search is not supported in this browser.');return}
-  const r=new SR();r.lang=vlang;$('#mic').classList.add('on');
+  const r=new SR();r.lang=vlang;$('#mic').classList.add('on');$('#mic').setAttribute('aria-pressed','true');
   r.onresult=e=>search(e.results[0][0].transcript);
-  r.onend=()=>$('#mic').classList.remove('on');
+  r.onend=()=>{$('#mic').classList.remove('on');$('#mic').setAttribute('aria-pressed','false')};
   r.start();
 });
 showRecent();

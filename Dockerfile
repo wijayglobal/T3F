@@ -37,12 +37,21 @@ ENV PYTHONUNBUFFERED=1 \
 
 WORKDIR /app
 
+# Unprivileged account for the web server. The entrypoint starts as root only to fix the
+# ownership of the models volume, then drops to this user (setpriv) before running gunicorn.
+RUN groupadd --system --gid 10001 app \
+ && useradd --system --uid 10001 --gid app --home-dir /app --shell /usr/sbin/nologin app \
+ && mkdir -p /models \
+ && chown app:app /models
+
 COPY --from=builder /app/.venv /app/.venv
 COPY deploy/entrypoint.sh /entrypoint.sh
 COPY . .
 
+# collectstatic needs settings to load; the key is a throwaway used only during the build.
 RUN chmod +x /entrypoint.sh \
- && python manage.py collectstatic --noinput
+ && DJANGO_SECRET_KEY=collectstatic-build-only-not-used-at-runtime-0123456789abcdef \
+    python manage.py collectstatic --noinput
 
 EXPOSE 8000
 ENTRYPOINT ["/entrypoint.sh"]

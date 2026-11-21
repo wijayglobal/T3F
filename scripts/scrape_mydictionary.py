@@ -53,10 +53,12 @@ def fetch(url, data=None, timeout=300, tries=5):
     if data is not None:
         data = urllib.parse.urlencode(data).encode()
     url = urllib.parse.quote(url, safe=":/?=&%-")
+    if not url.startswith(("https://", "http://")):
+        raise ValueError(f"refusing to fetch non-HTTP URL {url!r}")
     for attempt in range(tries):
         try:
-            req = urllib.request.Request(url, data=data, headers={"User-Agent": UA})
-            with urllib.request.urlopen(req, timeout=timeout) as r:
+            req = urllib.request.Request(url, data=data, headers={"User-Agent": UA})  # noqa: S310
+            with urllib.request.urlopen(req, timeout=timeout) as r:  # noqa: S310 - scheme checked above
                 return r.read().decode("utf-8", "replace")
         except (urllib.error.URLError, TimeoutError, ConnectionError) as e:
             if attempt == tries - 1:
@@ -107,7 +109,7 @@ def collect_dictionaries(work):
     print(f"phase 1: {len(slugs)} dictionaries", file=sys.stderr)
     books, headwords = {}, set()
     for n, slug in enumerate(slugs, 1):
-        key = hashlib.md5(slug.encode()).hexdigest()[:10]
+        key = hashlib.md5(slug.encode(), usedforsecurity=False).hexdigest()[:10]
         page = cached(pages / f"{key}.html", BASE + slug)
         heads = {text(c) for block in LIST_BLOCK.findall(page) for c in CELL.findall(block)} - {""}
         licence = ""
@@ -198,7 +200,7 @@ def book_resolver(books):
 
     by_key = {key(urllib.parse.urlparse(u).path): u for u in books}
 
-    @functools.lru_cache(maxsize=None)
+    @functools.cache
     def resolve(name, url):
         k = key(re.sub(r"\(\d{4}\)\s*$", "", name))
         if k in by_key:

@@ -33,3 +33,20 @@ data = [
 default-groups = ["data"]
 # A Django app, not an installable package: only the dependencies are installed.
 package = false
+
+[tool.ruff]
+line-length = 120
+target-version = "py311"
+extend-exclude = ["lexicon/migrations"]
+
+[tool.ruff.lint]
+# pyflakes, pycodestyle, bugbear, pyupgrade, isort, simplify and bandit (security) rules
+select = ["E", "F", "W", "B", "UP", "I", "S", "SIM"]
+ignore = [
+    "E501",   # long lines: data tables and templates-in-strings read better unwrapped
+    "S603", "S607",  # scripts/ call pdftotext with fixed argument lists
+    "S314",   # scripts/extract_tva.py parses pdftotext output of local files
+]
+
+[tool.ruff.lint.per-file-ignores]
+"lexicon/tests.py" = ["S101", "S105", "S106", "SIM115"]

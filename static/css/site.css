@@ -1,4 +1,4 @@
-:root{--kumkum:#c3161c;--kumkum-700:#9c1015;--arakku:#6b0a0e;--manjal:#f4c430;--manjal-300:#f9dc7c;--manjal-100:#fdf3cf;--paper:#f7f0e3;--surface:#fffaf0;--ink:#17110e;--muted:#4a3f38;--faint:#8a7d71;--line:rgba(23,17,14,.14);--mayil:#0e5e5a;
+:root{--kumkum:#c3161c;--kumkum-700:#9c1015;--arakku:#6b0a0e;--manjal:#f4c430;--manjal-300:#f9dc7c;--manjal-100:#fdf3cf;--paper:#f7f0e3;--surface:#fffaf0;--ink:#17110e;--muted:#4a3f38;--faint:#6e6158;--line:rgba(23,17,14,.14);--mayil:#0e5e5a;
 --display:"Anek Tamil","Anek Latin","Tamil Sangam MN","Nirmala UI",system-ui,sans-serif;--ui:"Anek Latin","Anek Tamil","Tamil Sangam MN","Nirmala UI",system-ui,sans-serif;
 --print:4px 4px 0 var(--ink);--print-sm:2px 2px 0 var(--ink);--r:12px}
 *{box-sizing:border-box}
@@ -15,7 +15,8 @@ a{color:var(--kumkum-700)}
 .mini-search input{flex:1}
 input,textarea,select{font:inherit;padding:10px 12px;border:2px solid var(--ink);border-radius:var(--r);background:var(--surface);width:100%}
 .mini-search input,.big-search input{width:auto}
-input:focus,textarea:focus,select:focus,button:focus-visible{outline:3px solid var(--mayil);outline-offset:1px}
+input:focus-visible,textarea:focus-visible,select:focus-visible,button:focus-visible,a:focus-visible,summary:focus-visible,[tabindex]:focus-visible{outline:3px solid var(--mayil);outline-offset:2px}
+.bar a:focus-visible,.bar button:focus-visible{outline-color:var(--manjal)}
 .btn{display:inline-block;font:700 1rem var(--display);padding:10px 18px;border:2px solid var(--ink);border-radius:999px;box-shadow:var(--print-sm);cursor:pointer;text-decoration:none;color:var(--ink)}
 .btn:active{transform:translate(2px,2px);box-shadow:none}
 .btn-gold{background:var(--manjal)}
@@ -33,7 +34,8 @@ h1 em{font-style:normal;color:var(--kumkum)}
 .lede{color:var(--muted);max-width:52ch;font-size:1.15rem}
 .big-search{display:flex;gap:10px;margin:28px 0 12px;padding:10px;background:var(--surface);border:3px solid var(--ink);border-radius:999px;box-shadow:var(--print)}
 .big-search input{flex:1;border:0;background:transparent;font-size:1.25rem;padding:8px 16px}
-.big-search input:focus{outline:0}
+.big-search input:focus-visible{outline:0}
+.big-search:focus-within{outline:3px solid var(--mayil);outline-offset:3px}
 .stats{color:var(--faint)}
 .count{font:800 1.4rem var(--display);margin:32px 0 12px}
 .count small{font:400 .9rem var(--ui);color:var(--faint)}
@@ -57,7 +59,7 @@ h1 em{font-style:normal;color:var(--kumkum)}
 .rels a{margin-right:8px;font-family:var(--display)}
 .sug-foot{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center;margin-top:8px}
 .stars{display:flex;align-items:center;gap:2px}
-.star{background:none;border:0;font-size:1.35rem;line-height:1;color:var(--chandanam,#e3cfae);cursor:pointer;padding:2px}
+.star{background:none;border:0;font-size:1.35rem;line-height:1;color:var(--chandanam,#e3cfae);cursor:pointer;padding:4px;min-width:32px;min-height:32px}
 .star.on{color:var(--manjal)}
 .star{-webkit-text-stroke:1px var(--ink)}
 .avg{margin-left:8px;font-size:.9rem;color:var(--muted)}
@@ -114,3 +116,22 @@ main.auth label{font-weight:600}
 @media (max-width:600px){.sources ul{padding-left:8px}}
 .note-long summary{cursor:pointer;list-style:none}
 .note-long[open] summary{display:none}
+
+/* --- accessibility helpers */
+.sr-only{position:absolute!important;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+.skip-link{position:absolute;left:12px;top:-60px;z-index:10;padding:10px 16px;background:var(--manjal);color:var(--ink);border:2px solid var(--ink);border-radius:var(--r);font-weight:700;text-decoration:none}
+.skip-link:focus{top:12px}
+main:focus{outline:0}
+.h2{font:800 1.5rem var(--display);margin:.2em 0 .6em}
+.field-error,.errorlist{color:var(--kumkum-700);font-weight:600}
+.errorlist{margin:4px 0;padding-left:18px}
+[aria-invalid="true"]{border-color:var(--kumkum)}
+.report label{font-weight:600;font-size:.85rem}
+.table-wrap{overflow-x:auto}
+.toolbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:12px 0 20px}
+.toolbar .tabs{margin:0}
+.push-right{margin-left:auto}
+h2.pair{font-size:inherit;font-weight:inherit}
+.vbtn,.btn{min-height:44px}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{transition:none!important;animation:none!important;scroll-behavior:auto!important}.btn:active,.vbtn:active{transform:none}}
+@media (forced-colors:active){.star.on{color:Highlight}.chip,.btn,.vbtn,.card{border-color:CanvasText}}

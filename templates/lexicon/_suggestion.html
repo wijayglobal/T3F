@@ -1,18 +1,18 @@
 {% load lex %}
 <li class="sug" data-id="{{ s.id }}">
   <div class="sug-main">
-    <span class="ta">{{ s.tamil }}</span>
+    <span class="ta" lang="ta">{{ s.tamil }}</span>
     {% if s.roman %}<span class="roman">{{ s.roman }}</span>{% endif %}
     <span class="chip chip-{{ s.region }}">{{ s.get_region_display }}</span>
-    {% if s.status == "pending" %}<span class="chip chip-pending">காத்திருப்பு · awaiting review</span>{% elif s.status == "draft" %}<span class="chip machine">வரைவு · unreviewed draft</span>{% elif s.status == "approved" and s.author_id %}<span class="chip chip-ok">✔ approved</span>{% endif %}
+    {% if s.status == "pending" %}<span class="chip chip-pending"><span lang="ta">காத்திருப்பு</span> · awaiting review</span>{% elif s.status == "draft" %}<span class="chip machine"><span lang="ta">வரைவு</span> · unreviewed draft</span>{% elif s.status == "approved" and s.author_id %}<span class="chip chip-ok"><span aria-hidden="true">✔ </span>approved</span>{% endif %}
     {% if s.pos %}<span class="pos">{{ s.pos }}</span>{% endif %}
   </div>
   {% if s.note %}{% if s.note|length > 180 %}<details class="note note-long"><summary>{{ s.note|truncatechars:140 }}</summary>{{ s.note }}</details>{% else %}<p class="note">{{ s.note }}</p>{% endif %}{% endif %}
   {% if s.related %}
   <p class="rels">
-    {% if s.related.syn %}<span><b>ஒத்த சொற்கள் · Synonyms</b> {% for w in s.related.syn %}<a href="{% url 'lexicon:results' %}?q={{ w|urlencode }}">{{ w }}</a>{% endfor %}</span>{% endif %}
-    {% if s.related.ant %}<span><b>எதிர்ச்சொற்கள் · Antonyms</b> {% for w in s.related.ant %}<a href="{% url 'lexicon:results' %}?q={{ w|urlencode }}">{{ w }}</a>{% endfor %}</span>{% endif %}
-    {% if s.related.rel %}<span><b>தொடர்புடையவை · Related</b> {% for w in s.related.rel %}<a href="{% url 'lexicon:results' %}?q={{ w|urlencode }}">{{ w }}</a>{% endfor %}</span>{% endif %}
+    {% if s.related.syn %}<span><b>ஒத்த சொற்கள் · Synonyms</b> {% for w in s.related.syn %}<a lang="ta" href="{% url 'lexicon:results' %}?q={{ w|urlencode }}">{{ w }}</a>{% endfor %}</span>{% endif %}
+    {% if s.related.ant %}<span><b>எதிர்ச்சொற்கள் · Antonyms</b> {% for w in s.related.ant %}<a lang="ta" href="{% url 'lexicon:results' %}?q={{ w|urlencode }}">{{ w }}</a>{% endfor %}</span>{% endif %}
+    {% if s.related.rel %}<span><b>தொடர்புடையவை · Related</b> {% for w in s.related.rel %}<a lang="ta" href="{% url 'lexicon:results' %}?q={{ w|urlencode }}">{{ w }}</a>{% endfor %}</span>{% endif %}
     {% if s.related_scope == "word" %}<span class="rel-scope">for any meaning of {{ s.tamil }}</span>{% endif %}
   </p>
   {% endif %}
@@ -21,28 +21,32 @@
     {% for m in s.other_meanings %}<span class="meaning">{{ m.gloss }}{% if m.register %} <i>({{ m.register }})</i>{% endif %}</span>{% if not forloop.last %}; {% endif %}{% endfor %}</span></p>
   {% endif %}
   <div class="sug-foot">
-    <div class="stars" data-url="{% url 'lexicon:rate' s.id %}" data-mine="{{ user_ratings|get:s.id|default:0 }}" {% if not user.is_authenticated %}data-anon="1"{% endif %}>
-      {% for i in "12345" %}<button type="button" class="star" data-v="{{ i }}" aria-label="{{ i }} star">★</button>{% endfor %}
-      <span class="avg"><b>{{ s.rating_avg|floatformat:1 }}</b> ({{ s.rating_count }})</span>
+    {% with mine=user_ratings|get:s.id|default:0 %}
+    <div class="stars" role="group" aria-label="Rate {{ s.tamil }}{% if not user.is_authenticated %} (sign in to rate){% endif %}" data-url="{% url 'lexicon:rate' s.id %}" data-mine="{{ mine }}" {% if not user.is_authenticated %}data-anon="1"{% endif %}>
+      {% for i in "12345" %}<button type="button" class="star" data-v="{{ i }}" aria-label="{{ i }} of 5 stars" aria-pressed="{% if mine|stringformat:'s' == i %}true{% else %}false{% endif %}">★</button>{% endfor %}
+      <span class="avg"><b>{{ s.rating_avg|floatformat:1 }}</b> ({{ s.rating_count }})<span class="sr-only"> average from {{ s.rating_count }} ratings</span></span>
     </div>
+    {% endwith %}
     {% if user.is_authenticated %}
     <details class="report">
-      <summary>report</summary>
+      <summary>report<span class="sr-only"> {{ s.tamil }}</span></summary>
       <form method="post" action="{% url 'lexicon:report' s.id %}">{% csrf_token %}
         <input type="hidden" name="next" value="{{ request.get_full_path }}">
-        <select name="reason">{% for v,l in report_form.fields.reason.choices %}<option value="{{ v }}">{{ l }}</option>{% endfor %}</select>
-        <textarea name="comment" rows="2" placeholder="Details (optional)"></textarea>
-        <button class="btn btn-ink">Send</button>
+        <label for="reason-{{ s.id }}">Reason</label>
+        <select id="reason-{{ s.id }}" name="reason" required>{% for v,l in report_form.fields.reason.choices %}<option value="{{ v }}">{{ l }}</option>{% endfor %}</select>
+        <label for="comment-{{ s.id }}">Details (optional)</label>
+        <textarea id="comment-{{ s.id }}" name="comment" rows="2" maxlength="1000"></textarea>
+        <button class="btn btn-ink">Send report</button>
       </form>
     </details>
     {% endif %}
   </div>
   <details class="sources"{% if s.sources|length <= 3 %} open{% endif %}>
-    <summary>ஆதாரங்கள் · Sources ({{ s.sources|length }})</summary>
+    <summary><span lang="ta">ஆதாரங்கள்</span> · Sources ({{ s.sources|length }})</summary>
     <ul>
       {% for a in s.sources %}
       <li>
-        <span class="src-name">{% if a.source_kind == "self" %}{{ a.source|default:"contributor" }} (own word){% elif a.source_url %}<a href="{{ a.source_url }}" target="_blank" rel="noopener nofollow">{{ a.source|default:a.source_url }}</a>{% else %}{{ a.source|default:a.get_source_kind_display }}{% endif %}{% if a.source_ref and a.source_ref != "mydictionary.in" %} · {{ a.source_ref }}{% endif %}</span>
+        <span class="src-name">{% if a.source_kind == "self" %}{{ a.source|default:"contributor" }} (own word){% elif a.source_url|safe_url %}<a href="{{ a.source_url|safe_url }}" target="_blank" rel="noopener noreferrer nofollow">{{ a.source|default:a.source_url }}<span class="sr-only"> (opens in a new tab)</span></a>{% else %}{{ a.source|default:a.get_source_kind_display }}{% endif %}{% if a.source_ref and a.source_ref != "mydictionary.in" %} · {{ a.source_ref }}{% endif %}</span>
         {% if a.domain %}<span class="chip chip-domain">{{ a.domain|domain_label }}</span>{% endif %}
         {% if a.register %}<span class="chip chip-register">{{ a.get_register_display }}</span>{% endif %}
         {% if a.sense %}<span class="sense">“{{ a.sense }}”</span>{% endif %}

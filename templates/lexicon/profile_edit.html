@@ -1,5 +1,6 @@
 {% extends "base.html" %}
+{% block title %}Edit profile · கலைச்சொல்{% endblock %}
 {% block content %}
-<section class="card"><h2>சுயவிவரம் <small>Edit profile</small></h2>
+<section class="card"><h1 class="h2"><span lang="ta">சுயவிவரம்</span> <small>Edit profile</small></h1>
 <form method="post" class="stack">{% csrf_token %}{{ form.as_p }}<button class="btn btn-red">Save</button></form></section>
 {% endblock %}

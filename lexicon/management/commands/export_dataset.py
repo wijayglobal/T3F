@@ -98,7 +98,7 @@ class Command(BaseCommand):
         from collections import Counter
 
         c = Counter((r["source"], r["license"]) for r in rows)
-        src = "\n".join(f"- {n} rows — {s} — licence: {l or 'n/a'}" for (s, l), n in c.most_common())
+        src = "\n".join(f"- {n} rows — {s} — licence: {lic or 'n/a'}" for (s, lic), n in c.most_common())
         n = len(rows)
         size = "n<1K" if n < 1000 else "1K<n<10K" if n < 10000 else "10K<n<100K" if n < 100000 else "100K<n<1M"
         (d / "contributors.json").write_text(json.dumps(contributors, ensure_ascii=False, indent=2), encoding="utf-8")

@@ -5,7 +5,7 @@ from django.conf import settings
 from django.core.mail import send_mail
 from django.utils import timezone
 
-from .models import Profile, Review, Status, Suggestion
+from .models import Profile, Review, Suggestion
 from .notify import api, esc
 
 log = logging.getLogger("kalaichol.telegram")
@@ -29,7 +29,8 @@ def _mark_message(cb, note):
     try:
         api("editMessageText", {
             "chat_id": msg["chat"]["id"], "message_id": msg["message_id"], "parse_mode": "HTML",
-            "text": (msg.get("text") or "") + f"\n\n{note}",
+            # Telegram returns the plain text; escape it again because we resend it as HTML.
+            "text": esc(msg.get("text") or "") + f"\n\n{note}",
         })
     except Exception:
         log.exception("editMessageText failed")

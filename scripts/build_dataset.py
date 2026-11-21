@@ -2,7 +2,8 @@
 Usage: python3 -I build_dataset.py <tamil.jsonl> <out.json>
 Each entry: [tamil, romanization, pos, [english glosses]]
 """
-import json, sys
+import json
+import sys
 
 src, out = sys.argv[1], sys.argv[2]
 merged = {}

@@ -70,7 +70,7 @@ class Command(BaseCommand):
                     word=e.term, gloss="; ".join(x for x in (e.meaning, e.meaning_note) if x), gloss_lang="ta",
                     domain=for_source(e.dictionary, e.dictionary_en), source=e.dictionary,
                     source_url=str(e.dictionary_url), license=e.license.value,
-                    ref=hashlib.sha1(f"{e.term}|{e.meaning}".encode()).hexdigest()[:20],
+                    ref=hashlib.sha1(f"{e.term}|{e.meaning}".encode(), usedforsecurity=False).hexdigest()[:20],
                 )
                 for e in tamil_definitions(path)
                 if len(e.term) <= 200

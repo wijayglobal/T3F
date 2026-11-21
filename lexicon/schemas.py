@@ -11,10 +11,11 @@ No Django imports, so the scraper and notebooks can use it too.
 """
 import json
 import re
+from collections.abc import Iterator
 from enum import Enum
 from pathlib import Path
+from typing import Annotated, Literal
 from urllib.parse import unquote
-from typing import Annotated, Iterator, Literal
 
 try:
     from .domains import for_source

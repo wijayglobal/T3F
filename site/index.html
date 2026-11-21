@@ -9,12 +9,12 @@
 <body>
 <header class="top">
   <div class="wrap bar">
-    <a class="logo" href="#">தமிழ் <span>Dictionary</span></a>
-    <nav>
+    <a class="logo" href="#"><span lang="ta">தமிழ்</span> <span>Dictionary</span></a>
+    <nav aria-label="Main">
       <a href="#search">Dictionary</a>
       <a href="#tips">Tips</a>
       <a href="#about">About</a>
-      <a href="#" id="favLink">★ Favourites</a>
+      <a href="#" id="favLink"><span aria-hidden="true">★ </span>Favourites</a>
     </nav>
   </div>
 </header>
@@ -35,20 +35,20 @@
       </div>
       <div class="row">
         <input id="q" type="text" placeholder="Type a word…" aria-label="Search word" required>
-        <button type="button" id="mic" title="Voice search">🎤</button>
-        <button type="button" id="lang" title="Voice language">EN</button>
+        <button type="button" id="mic" title="Voice search" aria-label="Voice search" aria-pressed="false"><span aria-hidden="true">🎤</span></button>
+        <button type="button" id="lang" title="Voice language" aria-label="Voice language: English">EN</button>
         <button type="submit" class="primary">Search</button>
       </div>
     </form>
     <div id="recentBox" hidden><strong>Recent:</strong> <span id="recent"></span></div>
-    <div id="results"></div>
+    <div id="results" aria-live="polite"></div>
   </section>
 
   <section id="tips" class="grid">
-    <div class="card"><h3>⌨️ Shortcuts</h3><p>Press <kbd>/</kbd> to focus search and <kbd>Enter</kbd> to look up.</p></div>
-    <div class="card"><h3>🎤 Voice search</h3><p>Tap the mic; switch EN/TA for the spoken language.</p></div>
-    <div class="card"><h3>📋 Copy</h3><p>Click a meaning to copy it.</p></div>
-    <div class="card"><h3>★ Favourites</h3><p>Star words to keep them; saved in your browser.</p></div>
+    <div class="card"><h3><span aria-hidden="true">⌨️ </span>Shortcuts</h3><p>Press <kbd>/</kbd> to focus search and <kbd>Enter</kbd> to look up.</p></div>
+    <div class="card"><h3><span aria-hidden="true">🎤 </span>Voice search</h3><p>Tap the mic; switch EN/TA for the spoken language.</p></div>
+    <div class="card"><h3><span aria-hidden="true">📋 </span>Copy</h3><p>Click a meaning (or focus it and press Enter) to copy it.</p></div>
+    <div class="card"><h3><span aria-hidden="true">★ </span>Favourites</h3><p>Star words to keep them; saved in your browser.</p></div>
   </section>
 
   <section id="about" class="card">

@@ -1,5 +1,4 @@
 """Staff admin panel at /manage/ — users, adding words, bulk import, reports."""
-import functools
 import re
 
 from django.contrib import messages
@@ -9,26 +8,15 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.views.decorators.http import require_POST
 
+from .access import is_verified, safe_next, staff_required
 from .forms import AddWordForm, BulkWordsForm
 from .management.commands.ingest import save as ingest_save
 from .models import Profile, Report, Review, SourceKind, Status, Suggestion, Term
 from .telegram import decide_user
-from .views import is_verified
 
 User = get_user_model()
-
-
-def staff_required(view):
-    @functools.wraps(view)
-    def wrapper(request, *a, **kw):
-        if not request.user.is_authenticated:
-            return redirect(f"/accounts/login/?next={request.get_full_path()}")
-        if not request.user.is_staff:
-            messages.error(request, "Admins only.")
-            return redirect("lexicon:home")
-        return view(request, *a, **kw)
-
-    return wrapper
+BULK_SEPARATOR = re.compile(r"\t|\||,")
+MAX_BULK_LINES = 5000
 
 
 @staff_required
@@ -72,13 +60,13 @@ def user_action(request, pk):
     if action in ("approve", "reject"):
         decide_user(user.pk, action == "approve", request.user.username)
         messages.success(request, f"{user.username}: {action}d.")
-    elif action in ("make_staff", "remove_staff") and request.user.is_superuser:
+    elif action in ("make_staff", "remove_staff") and request.user.is_superuser and user != request.user:
         user.is_staff = action == "make_staff"
         user.save(update_fields=["is_staff"])
         messages.success(request, f"{user.username} is {'now' if user.is_staff else 'no longer'} an admin.")
     else:
         messages.error(request, "Not allowed.")
-    return redirect(request.META.get("HTTP_REFERER") or "lexicon:manage_users")
+    return redirect(safe_next(request, request.headers.get("referer"), "lexicon:manage_users"))
 
 
 @staff_required
@@ -102,8 +90,12 @@ def words(request):
     if request.method == "POST" and request.POST.get("form") == "bulk" and bulk.is_valid():
         d = bulk.cleaned_data
         rows = []
-        for line in d["rows"].splitlines():
-            parts = [p.strip() for p in re.split(r"\t|\||,", line, maxsplit=1)]
+        lines = d["rows"].splitlines()
+        if len(lines) > MAX_BULK_LINES:
+            messages.error(request, f"Paste at most {MAX_BULK_LINES} lines at a time.")
+            return render(request, "manage/words.html", {"add": add, "bulk": bulk})
+        for line in lines:
+            parts = [p.strip() for p in BULK_SEPARATOR.split(line, maxsplit=1)]
             if len(parts) == 2 and all(parts):
                 rows.append({"en": parts[0], "ta": parts[1], "url": d["source_url"]})
         n = ingest_save(

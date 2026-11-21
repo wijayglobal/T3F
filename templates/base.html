@@ -3,38 +3,43 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="English to Tamil technical terms with regional variants, sources and community review.">
 <title>{% block title %}கலைச்சொல் · Kalaichol{% endblock %}</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Anek+Latin:wdth,wght@75..100,400..800&family=Anek+Tamil:wdth,wght@75..100,400..800&family=Tiro+Tamil&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="{% static 'css/site.css' %}">
 </head>
 <body>
+<a class="skip-link" href="#main">Skip to content</a>
 <header class="bar">
-  <a class="brand" href="{% url 'lexicon:home' %}"><span class="aytham">ஃ</span><span>கலைச்சொல்</span></a>
+  <a class="brand" href="{% url 'lexicon:home' %}" aria-label="கலைச்சொல் Kalaichol — home"><span class="aytham" aria-hidden="true">ஃ</span><span lang="ta">கலைச்சொல்</span></a>
   {% if request.resolver_match.url_name != 'home' %}
   <form class="mini-search" action="{% url 'lexicon:results' %}" role="search">
-    <input name="q" value="{{ q|default:'' }}" placeholder="Search a word · சொல்லைத் தேடுக" lang="ta" autocomplete="off">
-    <button class="btn btn-gold">தேடுக</button>
+    <label class="sr-only" for="mini-q">Search a word</label>
+    <input id="mini-q" type="search" name="q" value="{{ q|default:'' }}" placeholder="Search a word · சொல்லைத் தேடுக" autocomplete="off" maxlength="100">
+    <button class="btn btn-gold"><span lang="ta">தேடுக</span><span class="sr-only"> (search)</span></button>
   </form>
   {% endif %}
-  <nav>
-    <a href="{% url 'lexicon:new_term' %}">+ Add word</a>
-    <a href="{% url 'lexicon:review' %}">✓ Review</a>
-    {% if user.is_staff %}<a href="{% url 'lexicon:manage' %}">⚙ Admin</a>{% endif %}
+  <nav aria-label="Main">
+    <a href="{% url 'lexicon:new_term' %}"><span aria-hidden="true">+ </span>Add word</a>
+    <a href="{% url 'lexicon:review' %}"><span aria-hidden="true">✓ </span>Review</a>
+    {% if user.is_staff %}<a href="{% url 'lexicon:manage' %}"><span aria-hidden="true">⚙ </span>Admin</a>{% endif %}
     {% if user.is_authenticated %}
-      <a class="who" href="{% url 'lexicon:profile' user.username %}">{{ user.username }}</a>
-      <form method="post" action="{% url 'account_logout' %}">{% csrf_token %}<button class="link">வெளியேறு</button></form>
+      <a class="who" href="{% url 'lexicon:profile' user.username %}"><span class="sr-only">Your profile: </span>{{ user.username }}</a>
+      <form method="post" action="{% url 'account_logout' %}">{% csrf_token %}<button class="link"><span lang="ta">வெளியேறு</span><span class="sr-only"> (sign out)</span></button></form>
     {% else %}
-      <a href="{% url 'account_login' %}">உள்நுழைக</a>
-      <a class="btn btn-red" href="{% url 'account_signup' %}">பதிவு செய்க · Sign up</a>
+      <a href="{% url 'account_login' %}"><span lang="ta">உள்நுழைக</span><span class="sr-only"> (sign in)</span></a>
+      <a class="btn btn-red" href="{% url 'account_signup' %}"><span lang="ta">பதிவு செய்க</span> · Sign up</a>
     {% endif %}
   </nav>
 </header>
-{% if messages %}<div class="messages">{% for m in messages %}<p class="msg {{ m.tags }}">{{ m }}</p>{% endfor %}</div>{% endif %}
-<main class="{% block mainclass %}{% endblock %}">{% block content %}{% endblock %}</main>
+{% if messages %}<div class="messages">{% for m in messages %}<p class="msg {{ m.tags }}" role="{% if m.level_tag == 'error' %}alert{% else %}status{% endif %}">{{ m }}</p>{% endfor %}</div>{% endif %}
+<main id="main" tabindex="-1" class="{% block mainclass %}{% endblock %}">{% block content %}{% endblock %}</main>
 <footer class="foot">
   <p>Words seeded from Wiktionary (CC BY-SA). Suggestions and ratings come from the community. <a href="{% url 'lexicon:contributors' %}">Contributors</a></p>
 </footer>
+<div id="live" class="sr-only" aria-live="polite"></div>
 <script src="{% static 'js/site.js' %}" defer></script>
 </body>
 </html>
